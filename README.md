@@ -4,7 +4,7 @@
 
 1. install depends
 ```bash
-sudo pacman -S whisper.cpp-git cli11 cmake gcc curl pkgconf
+sudo pacman -S make cmake gcc curl pkgconf nlohmann-json whisper.cpp-git cli11
 ```
 
 2. compile

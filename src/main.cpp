@@ -14,10 +14,13 @@
 #include <cstdio>
 #include <fstream>
 #include <iostream>
+#include <nlohmann/json.hpp>
 #include <string>
 #include <thread>
 #include <vector>
 #include <whisper.h>
+
+using json = nlohmann::json;
 
 int main(int argc, char **argv) {
   whisper_params params;
@@ -194,7 +197,9 @@ int main(int argc, char **argv) {
     std::cout << result << std::endl;
 
     auto callback = [](const std::string &response) {
-      std::cout << "Response received: " << response << std::endl;
+      json data = json::parse(response);
+      std::string ai_response = data["choices"][0]["message"]["content"];
+      std::cout << "Response received: " << ai_response << std::endl;
     };
 
     mychat.send_async(result, callback);

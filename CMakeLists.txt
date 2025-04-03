@@ -18,4 +18,4 @@ add_executable(${PROJECT_NAME} ${SOURCES})
 target_include_directories(${PROJECT_NAME} PRIVATE inc ${libcurl_INCLUDE_DIRS})
 
 target_link_libraries(${PROJECT_NAME} ${SDL2_LIBRARIES} whisper
-                      ${libcurl_LIBRARIES} nlohmann_json)
+                      ${libcurl_LIBRARIES})
