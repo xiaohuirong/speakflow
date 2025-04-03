@@ -1,6 +1,6 @@
 #include "parse.h"
-#include "whisper.h"
 #include <cstdio>
+#include <whisper.h>
 
 void whisper_print_usage(int /*argc*/, char **argv,
                          const whisper_params &params) {

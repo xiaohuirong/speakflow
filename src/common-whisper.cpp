@@ -2,7 +2,7 @@
 
 #include "common-whisper.h"
 
-#include "whisper.h"
+#include <whisper.h>
 
 // third-party utilities
 // use your favorite implementations

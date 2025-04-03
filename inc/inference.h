@@ -1,6 +1,6 @@
 #pragma once
 #include "parse.h"
-#include "whisper.h"
+#include <whisper.h>
 #include <vector>
 
 int reference(whisper_params &params, std::vector<whisper_token> &prompt_tokens,
