@@ -1,12 +1,11 @@
 #include "mainwindow.h"
+#include "common.h"
 #include "qpushbutton.h"
 #include "ui_mainwindow.h"
 
-#include "chat.h"
-#include "common-sdl.h"
-#include "common.h"
 #include "inference.h"
 #include "mylog.h"
+#include <chrono>
 #include <iostream>
 #include <nlohmann/json.hpp>
 
@@ -17,25 +16,16 @@ MainWindow::MainWindow(QWidget *parent, const whisper_params &params)
   ui->setupUi(this);
   connect(ui->clickButton, &QPushButton::clicked, this,
           &MainWindow::handleClick);
-}
 
-MainWindow::~MainWindow() { delete ui; }
-
-void MainWindow::handleClick() {
-  ui->logOutput->append("Hello world!");
-  // running();
-}
-
-int MainWindow::running() {
   // init audio
-  audio_async audio(params.length_ms);
-  if (!audio.init(params.capture_id, WHISPER_SAMPLE_RATE,
-                  (SDL_bool)params.is_microphone)) {
+  audio = new audio_async(params.length_ms);
+  if (!audio->init(params.capture_id, WHISPER_SAMPLE_RATE,
+                   (SDL_bool)params.is_microphone)) {
     fprintf(stderr, "%s: audio.init() failed!\n", __func__);
-    return 1;
+    exit(-1);
   }
 
-  audio.resume();
+  audio->resume();
 
   // whisper init
   if (params.language != "auto" &&
@@ -45,22 +35,18 @@ int MainWindow::running() {
     exit(0);
   }
 
-  struct whisper_context_params cparams = whisper_context_default_params();
-
   cparams.use_gpu = params.use_gpu;
   cparams.flash_attn = params.flash_attn;
 
-  struct whisper_context *ctx =
-      whisper_init_from_file_with_params(params.model.c_str(), cparams);
+  ctx = whisper_init_from_file_with_params(params.model.c_str(), cparams);
+  mychat = new Chat(this->params);
 
-  std::vector<float> pcmf32(params.n_samples_30s, 0.0f);
-  std::vector<float> pcmf32_old;
-  std::vector<float> pcmf32_new(params.n_samples_30s, 0.0f);
+  pcmf32 = std::vector<float>(params.n_samples_30s, 0.0f);
+  pcmf32_new = std::vector<float>(params.n_samples_30s, 0.0f);
 
-  std::vector<whisper_token> prompt_tokens;
+  print_process_info(this->params, ctx);
 
-  print_process_info(params, ctx);
-  bool is_running = true;
+  is_running = true;
 
   std::ofstream fout;
   if (params.fname_out.length() > 0) {
@@ -68,36 +54,48 @@ int MainWindow::running() {
     if (!fout.is_open()) {
       fprintf(stderr, "%s: failed to open output file '%s'!\n", __func__,
               params.fname_out.c_str());
-      return 1;
+      exit(-1);
     }
   }
 
-  wav_writer wavWriter;
-  // save wav file
   if (params.save_audio) {
+    wavWriter = new wav_writer();
+
     // Get current date/time for filename
     time_t now = time(0);
     char buffer[80];
     strftime(buffer, sizeof(buffer), "%Y%m%d%H%M%S", localtime(&now));
     std::string filename = std::string(buffer) + ".wav";
 
-    wavWriter.open(filename, WHISPER_SAMPLE_RATE, 16, 1);
+    wavWriter->open(filename, WHISPER_SAMPLE_RATE, 16, 1);
   }
+
   printf("[Start speaking]\n");
   fflush(stdout);
+}
 
-  auto t_last = std::chrono::high_resolution_clock::now();
-  const auto t_start = t_last;
+MainWindow::~MainWindow() {
+  delete ui;
+  audio->pause();
+  whisper_print_timings(ctx);
+  whisper_free(ctx);
+  delete mychat;
+}
 
-  auto t_change = t_last;
-  bool last_status = 0;
+void MainWindow::handleClick() {
+  ui->logOutput->append("Hello world!");
+  t_last = std::chrono::high_resolution_clock::now();
+  t_start = t_last;
+  t_change = t_last;
+  running();
+}
 
-  Chat mychat = Chat(params);
+int MainWindow::running() {
 
   // main audio loop
   while (is_running) {
     if (params.save_audio) {
-      wavWriter.write(pcmf32_new.data(), pcmf32_new.size());
+      wavWriter->write(pcmf32_new.data(), pcmf32_new.size());
     }
     // handle Ctrl + C
     is_running = sdl_poll_events();
@@ -115,19 +113,19 @@ int MainWindow::running() {
         if (!is_running) {
           break;
         }
-        audio.get(params.step_ms, pcmf32_new);
+        audio->get(params.step_ms, pcmf32_new);
 
         if ((int)pcmf32_new.size() > 2 * params.n_samples_step) {
           fprintf(stderr,
                   "\n\n%s: WARNING: cannot process audio fast enough, dropping "
                   "audio ...\n\n",
                   __func__);
-          audio.clear();
+          audio->clear();
           continue;
         }
 
         if ((int)pcmf32_new.size() >= params.n_samples_step) {
-          audio.clear();
+          audio->clear();
           break;
         }
 
@@ -169,7 +167,7 @@ int MainWindow::running() {
         t_last = t_now;
       }
 
-      audio.get(2000, pcmf32_new);
+      audio->get(2000, pcmf32_new);
 
       bool cur_status =
           !::vad_simple(pcmf32_new, WHISPER_SAMPLE_RATE, 1000, params.vad_thold,
@@ -180,7 +178,7 @@ int MainWindow::running() {
           const auto diff_len =
               std::chrono::duration_cast<std::chrono::milliseconds>(t_now -
                                                                     t_change);
-          audio.get(diff_len.count() + 2000, pcmf32);
+          audio->get(diff_len.count() + 2000, pcmf32);
         } else {
           t_change = t_now;
           continue;
@@ -202,13 +200,8 @@ int MainWindow::running() {
       ui->logOutput->append("hello");
     };
 
-    mychat.send_async(result, callback);
+    mychat->send_async(result, callback);
   }
-
-  audio.pause();
-
-  whisper_print_timings(ctx);
-  whisper_free(ctx);
 
   return 0;
 }
