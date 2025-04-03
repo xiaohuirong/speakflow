@@ -1,5 +1,6 @@
 #include "parse.h"
 #include <cstdio>
+#include <iostream>
 #include <whisper.h>
 
 void whisper_print_usage(int /*argc*/, char **argv,
@@ -112,6 +113,10 @@ bool whisper_params_parse(int argc, char **argv, whisper_params &params) {
       params.vad_thold = std::stof(argv[++i]);
     } else if (arg == "-fth" || arg == "--freq-thold") {
       params.freq_thold = std::stof(argv[++i]);
+    } else if (arg == "-to" || arg == "--token") {
+      params.token = argv[++i];
+    } else if (arg == "-u" || arg == "--url") {
+      params.url = argv[++i];
     } else if (arg == "-tr" || arg == "--translate") {
       params.translate = true;
     } else if (arg == "-nf" || arg == "--no-fallback") {
@@ -134,7 +139,7 @@ bool whisper_params_parse(int argc, char **argv, whisper_params &params) {
       params.use_gpu = false;
     } else if (arg == "-fa" || arg == "--flash-attn") {
       params.flash_attn = true;
-    }else if (arg == "-im" || arg == "--is-microphone") {
+    } else if (arg == "-im" || arg == "--is-microphone") {
       params.is_microphone = true;
     }
 
@@ -161,6 +166,9 @@ bool whisper_params_parse(int argc, char **argv, whisper_params &params) {
   params.n_new_line = !params.use_vad
                           ? std::max(1, params.length_ms / params.step_ms - 1)
                           : 1; // number of steps to print new line
+
+  params.token = "Authorization: Bearer " + params.token;
+  std::cout << params.token << std::endl;
 
   return true;
 }

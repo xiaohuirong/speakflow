@@ -23,6 +23,8 @@ struct whisper_params {
   int32_t n_new_line = 0;
 
   bool is_microphone = false;
+  std::string token;
+  std::string url = "https://api.deepseek.com/chat/completions";
 
   float vad_thold = 0.6f;
   float freq_thold = 100.0f;

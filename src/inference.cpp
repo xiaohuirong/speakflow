@@ -10,11 +10,13 @@ static int n_iter = 0;
 std::ofstream fout;
 
 // duration = (t_last - t_start).count()
-int reference(whisper_params &params, std::vector<whisper_token> &prompt_tokens,
-              whisper_context *ctx, std::vector<float> &pcmf32,
-              int64_t duration, std::vector<float> &pcmf32_old)
+std::string inference(whisper_params &params,
+                      std::vector<whisper_token> &prompt_tokens,
+                      whisper_context *ctx, std::vector<float> &pcmf32,
+                      int64_t duration, std::vector<float> &pcmf32_old)
 // run the inference
 {
+  std::string result;
   whisper_full_params wparams = whisper_full_default_params(
       params.beam_size > 1 ? WHISPER_SAMPLING_BEAM_SEARCH
                            : WHISPER_SAMPLING_GREEDY);
@@ -43,7 +45,7 @@ int reference(whisper_params &params, std::vector<whisper_token> &prompt_tokens,
 
   if (whisper_full(ctx, wparams, pcmf32.data(), pcmf32.size()) != 0) {
     // fprintf(stderr, "%s: failed to process audio\n", argv[0]);
-    return 6;
+    return nullptr;
   }
 
   // print result;
@@ -69,6 +71,9 @@ int reference(whisper_params &params, std::vector<whisper_token> &prompt_tokens,
     const int n_segments = whisper_full_n_segments(ctx);
     for (int i = 0; i < n_segments; ++i) {
       const char *text = whisper_full_get_segment_text(ctx, i);
+
+      result += text;
+      result += ",";
 
       if (params.no_timestamps) {
         printf("%s", text);
@@ -133,5 +138,5 @@ int reference(whisper_params &params, std::vector<whisper_token> &prompt_tokens,
     }
   }
   fflush(stdout);
-  return 0;
+  return result;
 }

@@ -2,6 +2,7 @@
 //
 // A very quick-n-dirty implementation serving mainly as a proof of concept.
 //
+#include "chat.h"
 #include "common-sdl.h"
 #include "common.h"
 #include "inference.h"
@@ -12,6 +13,7 @@
 #include <chrono>
 #include <cstdio>
 #include <fstream>
+#include <iostream>
 #include <string>
 #include <thread>
 #include <vector>
@@ -88,6 +90,8 @@ int main(int argc, char **argv) {
 
   auto t_change = t_last;
   bool last_status = 0;
+
+  Chat mychat = Chat(params);
 
   // main audio loop
   while (is_running) {
@@ -185,8 +189,15 @@ int main(int argc, char **argv) {
       }
     }
 
-    reference(params, prompt_tokens, ctx, pcmf32, (t_last - t_start).count(),
-              pcmf32_old);
+    std::string result = inference(params, prompt_tokens, ctx, pcmf32,
+                                   (t_last - t_start).count(), pcmf32_old);
+    std::cout << result << std::endl;
+
+    auto callback = [](const std::string &response) {
+      std::cout << "Response received: " << response << std::endl;
+    };
+
+    mychat.send_async(result, callback);
   }
 
   audio.pause();
