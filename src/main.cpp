@@ -8,6 +8,7 @@
 #include "whisper.h"
 
 #include <chrono>
+#include <cstdint>
 #include <cstdio>
 #include <fstream>
 #include <string>
@@ -308,6 +309,9 @@ int main(int argc, char **argv) {
   auto t_last = std::chrono::high_resolution_clock::now();
   const auto t_start = t_last;
 
+  auto t_change = std::chrono::high_resolution_clock::now();
+  bool last_status = 0;
+
   // main audio loop
   while (is_running) {
     if (params.save_audio) {
@@ -378,20 +382,29 @@ int main(int argc, char **argv) {
         std::this_thread::sleep_for(std::chrono::milliseconds(100));
 
         continue;
+      } else {
+        t_last = t_now;
       }
 
       audio.get(2000, pcmf32_new);
 
-      if (::vad_simple(pcmf32_new, WHISPER_SAMPLE_RATE, 1000, params.vad_thold,
-                       params.freq_thold, false)) {
-        audio.get(params.length_ms, pcmf32);
+      bool cur_status =
+          !::vad_simple(pcmf32_new, WHISPER_SAMPLE_RATE, 1000, params.vad_thold,
+                        params.freq_thold, false);
+      if (cur_status ^ last_status) {
+        last_status = cur_status;
+        if (cur_status == 0) {
+          const auto diff_len =
+              std::chrono::duration_cast<std::chrono::milliseconds>(t_now -
+                                                                    t_change);
+          audio.get(static_cast<int32_t>(diff_len.count()) + 2000, pcmf32);
+        } else {
+          t_change = t_now;
+          continue;
+        }
       } else {
-        std::this_thread::sleep_for(std::chrono::milliseconds(100));
-
         continue;
       }
-
-      t_last = t_now;
     }
 
     // run the inference
