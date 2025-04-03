@@ -8,8 +8,8 @@
 #include "mylog.h"
 #include "parse.h"
 
+#include <SDL_stdinc.h>
 #include <chrono>
-#include <cstdint>
 #include <cstdio>
 #include <fstream>
 #include <string>
@@ -26,7 +26,8 @@ int main(int argc, char **argv) {
 
   // init audio
   audio_async audio(params.length_ms);
-  if (!audio.init(params.capture_id, WHISPER_SAMPLE_RATE)) {
+  if (!audio.init(params.capture_id, WHISPER_SAMPLE_RATE,
+                  (SDL_bool)params.is_microphone)) {
     fprintf(stderr, "%s: audio.init() failed!\n", __func__);
     return 1;
   }
@@ -174,7 +175,7 @@ int main(int argc, char **argv) {
           const auto diff_len =
               std::chrono::duration_cast<std::chrono::milliseconds>(t_now -
                                                                     t_change);
-          audio.get(static_cast<int32_t>(diff_len.count()) + 2000, pcmf32);
+          audio.get(diff_len.count() + 2000, pcmf32);
         } else {
           t_change = t_now;
           continue;

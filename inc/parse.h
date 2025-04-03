@@ -22,6 +22,8 @@ struct whisper_params {
   int32_t n_samples_30s = 0;
   int32_t n_new_line = 0;
 
+  bool is_microphone = false;
+
   float vad_thold = 0.6f;
   float freq_thold = 100.0f;
 

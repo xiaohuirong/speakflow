@@ -78,6 +78,10 @@ void whisper_print_usage(int /*argc*/, char **argv,
       stderr,
       "  -fa,      --flash-attn    [%-7s] flash attention during inference\n",
       params.flash_attn ? "true" : "false");
+  fprintf(stderr,
+          "  -im,      --is-microphone [%-7s] select microphone as input "
+          "or not\n",
+          params.is_microphone ? "true" : "false");
   fprintf(stderr, "\n");
 }
 
@@ -130,6 +134,8 @@ bool whisper_params_parse(int argc, char **argv, whisper_params &params) {
       params.use_gpu = false;
     } else if (arg == "-fa" || arg == "--flash-attn") {
       params.flash_attn = true;
+    }else if (arg == "-im" || arg == "--is-microphone") {
+      params.is_microphone = true;
     }
 
     else {
