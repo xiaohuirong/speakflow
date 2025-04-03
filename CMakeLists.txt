@@ -9,6 +9,7 @@ find_package(whisper REQUIRED)
 find_package(PkgConfig REQUIRED)
 pkg_check_modules(libcurl REQUIRED libcurl)
 find_package(nlohmann_json REQUIRED)
+find_package(CLI11 REQUIRED)
 
 file(GLOB SOURCES src/*.cpp)
 
