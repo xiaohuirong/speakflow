@@ -97,95 +97,37 @@ int MainWindow::running() {
     if (params.save_audio) {
       wavWriter->write(pcmf32_new.data(), pcmf32_new.size());
     }
-    // handle Ctrl + C
-    is_running = sdl_poll_events();
 
-    if (!is_running) {
-      break;
+    const auto t_now = std::chrono::high_resolution_clock::now();
+    const auto t_diff =
+        std::chrono::duration_cast<std::chrono::milliseconds>(t_now - t_last)
+            .count();
+
+    if (t_diff < 2000) {
+      std::this_thread::sleep_for(std::chrono::milliseconds(100));
+
+      continue;
+    } else {
+      t_last = t_now;
     }
 
-    // process new audio
+    audio->get(2000, pcmf32_new);
 
-    if (!params.use_vad) {
-      while (true) {
-        // handle Ctrl + C
-        is_running = sdl_poll_events();
-        if (!is_running) {
-          break;
-        }
-        audio->get(params.step_ms, pcmf32_new);
-
-        if ((int)pcmf32_new.size() > 2 * params.n_samples_step) {
-          fprintf(stderr,
-                  "\n\n%s: WARNING: cannot process audio fast enough, dropping "
-                  "audio ...\n\n",
-                  __func__);
-          audio->clear();
-          continue;
-        }
-
-        if ((int)pcmf32_new.size() >= params.n_samples_step) {
-          audio->clear();
-          break;
-        }
-
-        std::this_thread::sleep_for(std::chrono::milliseconds(1));
+    bool cur_status = !::vad_simple(pcmf32_new, WHISPER_SAMPLE_RATE, 1000,
+                                    params.vad_thold, params.freq_thold, false);
+    if (cur_status ^ last_status) {
+      last_status = cur_status;
+      if (cur_status == 0) {
+        const auto diff_len =
+            std::chrono::duration_cast<std::chrono::milliseconds>(t_now -
+                                                                  t_change);
+        audio->get(diff_len.count() + 2000, pcmf32);
+      } else {
+        t_change = t_now;
+        continue;
       }
-
-      const int n_samples_new = pcmf32_new.size();
-
-      // take up to params.length_ms audio from previous iteration
-      const int n_samples_take =
-          std::min((int)pcmf32_old.size(),
-                   std::max(0, params.n_samples_keep + params.n_samples_len -
-                                   n_samples_new));
-
-      // printf("processing: take = %d, new = %d, old = %d\n", n_samples_take,
-      // n_samples_new, (int) pcmf32_old.size());
-
-      pcmf32.resize(n_samples_new + n_samples_take);
-
-      for (int i = 0; i < n_samples_take; i++) {
-        pcmf32[i] = pcmf32_old[pcmf32_old.size() - n_samples_take + i];
-      }
-
-      memcpy(pcmf32.data() + n_samples_take, pcmf32_new.data(),
-             n_samples_new * sizeof(float));
-
-      pcmf32_old = pcmf32;
     } else {
-      const auto t_now = std::chrono::high_resolution_clock::now();
-      const auto t_diff =
-          std::chrono::duration_cast<std::chrono::milliseconds>(t_now - t_last)
-              .count();
-
-      if (t_diff < 2000) {
-        std::this_thread::sleep_for(std::chrono::milliseconds(100));
-
-        continue;
-      } else {
-        t_last = t_now;
-      }
-
-      audio->get(2000, pcmf32_new);
-
-      bool cur_status =
-          !::vad_simple(pcmf32_new, WHISPER_SAMPLE_RATE, 1000, params.vad_thold,
-                        params.freq_thold, false);
-      if (cur_status ^ last_status) {
-        last_status = cur_status;
-        if (cur_status == 0) {
-          const auto diff_len =
-              std::chrono::duration_cast<std::chrono::milliseconds>(t_now -
-                                                                    t_change);
-          audio->get(diff_len.count() + 2000, pcmf32);
-        } else {
-          t_change = t_now;
-          continue;
-        }
-      } else {
-        continue;
-      }
+      continue;
     }
 
     std::string result = inference(params, prompt_tokens, ctx, pcmf32,
