@@ -1,0 +1,1 @@
+# a real-time speech-to-text project that uses Whisper and an LLM API for intelligent responses.
