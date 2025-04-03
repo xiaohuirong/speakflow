@@ -10,12 +10,20 @@ find_package(PkgConfig REQUIRED)
 pkg_check_modules(libcurl REQUIRED libcurl)
 find_package(nlohmann_json REQUIRED)
 find_package(CLI11 REQUIRED)
+find_package(Qt6 REQUIRED COMPONENTS Widgets)
 
 file(GLOB SOURCES src/*.cpp)
 
-add_executable(${PROJECT_NAME} ${SOURCES})
+set(UI_FILES ui/mainwindow.ui)
+set(MOC_HEADERS inc/mainwindow.h)
 
-target_include_directories(${PROJECT_NAME} PRIVATE inc ${libcurl_INCLUDE_DIRS})
+qt6_wrap_ui(UI_HEADERS ${UI_FILES})
+qt6_wrap_cpp(MOC_SOURCES ${MOC_HEADERS})
 
-target_link_libraries(${PROJECT_NAME} ${SDL2_LIBRARIES} whisper
-                      ${libcurl_LIBRARIES})
+add_executable(${PROJECT_NAME} ${SOURCES} ${UI_HEADERS} ${MOC_SOURCES})
+
+target_include_directories(${PROJECT_NAME} PRIVATE inc ${libcurl_INCLUDE_DIRS}
+                                                   ${CMAKE_BINARY_DIR})
+
+target_link_libraries(${PROJECT_NAME} PRIVATE ${SDL2_LIBRARIES} whisper
+                                              ${libcurl_LIBRARIES} Qt6::Widgets)
