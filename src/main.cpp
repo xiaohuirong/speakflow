@@ -86,7 +86,7 @@ int main(int argc, char **argv) {
   auto t_last = std::chrono::high_resolution_clock::now();
   const auto t_start = t_last;
 
-  auto t_change = std::chrono::high_resolution_clock::now();
+  auto t_change = t_last;
   bool last_status = 0;
 
   // main audio loop
