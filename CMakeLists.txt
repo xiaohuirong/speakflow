@@ -8,8 +8,7 @@ find_package(SDL2 REQUIRED)
 
 find_package(whisper REQUIRED)
 
-set(SOURCES src/main.cpp src/common-sdl.cpp src/common.cpp
-            src/common-whisper.cpp)
+file(GLOB SOURCES src/*.cpp)
 
 add_executable(${PROJECT_NAME} ${SOURCES})
 
