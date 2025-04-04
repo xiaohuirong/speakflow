@@ -1,9 +1,11 @@
 #include "mainwindow.h"
 #include "common.h"
+#include "inference.h"
+#include "previewpage.h"
 #include "qpushbutton.h"
 #include "ui_mainwindow.h"
 
-#include "inference.h"
+#include <QWebChannel>
 #include <chrono>
 #include <iostream>
 #include <nlohmann/json.hpp>
@@ -14,8 +16,30 @@ using json = nlohmann::json;
 MainWindow::MainWindow(QWidget *parent, const whisper_params &params)
     : QMainWindow(parent), ui(new Ui::MainWindow), params(params) {
   ui->setupUi(this);
+  ui->editor->setFont(QFontDatabase::systemFont(QFontDatabase::FixedFont));
+  ui->preview->setContextMenuPolicy(Qt::NoContextMenu);
+
+  auto *page = new PreviewPage(this);
+  ui->preview->setPage(page);
+
+  connect(ui->preview, &QWebEngineView::loadFinished, this, [=](bool) {
+    ui->preview->page()->runJavaScript(
+        "window.scrollTo(0, document.body.scrollHeight);");
+  });
+
+  connect(ui->editor, &QPlainTextEdit::textChanged,
+          [this]() { m_content.setText(ui->editor->toPlainText()); });
+
   connect(ui->clickButton, &QPushButton::clicked, this,
           &MainWindow::handleClick);
+
+  auto *channel = new QWebChannel(this);
+  channel->registerObject(QStringLiteral("content"), &m_content);
+  page->setWebChannel(channel);
+
+  ui->preview->setUrl(QUrl("qrc:/index.html"));
+
+  ui->statusbar->showMessage("Whisper未启动...");
 
   // init audio
   audio = new audio_async(params.length_ms);
@@ -24,8 +48,6 @@ MainWindow::MainWindow(QWidget *parent, const whisper_params &params)
     fprintf(stderr, "%s: audio.init() failed!\n", __func__);
     exit(-1);
   }
-
-  audio->resume();
 
   // whisper init
   if (params.language != "auto" &&
@@ -40,8 +62,6 @@ MainWindow::MainWindow(QWidget *parent, const whisper_params &params)
 
   pcmf32 = std::vector<float>(params.n_samples_30s, 0.0f);
   pcmf32_new = std::vector<float>(params.n_samples_30s, 0.0f);
-
-  is_running = true;
 
   std::ofstream fout;
   if (params.fname_out.length() > 0) {
@@ -77,12 +97,23 @@ MainWindow::~MainWindow() {
 }
 
 void MainWindow::handleClick() {
-  ui->logOutput->append("Hello world!");
-  t_change = std::chrono::high_resolution_clock::now();
-  timer->start(2000);
+  if (!is_running) {
+    is_running = true;
+    ui->clickButton->setText("停止");
+    ui->statusbar->showMessage("Whisper实时记录中...");
+    audio->resume();
+    t_change = std::chrono::high_resolution_clock::now();
+    timer->start(2000);
+  } else {
+    is_running = false;
+    ui->clickButton->setText("启动");
+    ui->statusbar->showMessage("Whisper未启动...");
+    audio->pause();
+    timer->stop();
+  }
 }
 
-int MainWindow::running() {
+auto MainWindow::running() -> int {
 
   // main audio loop
   if (params.save_audio) {
@@ -97,7 +128,7 @@ int MainWindow::running() {
                                   params.vad_thold, params.freq_thold, false);
   if (cur_status ^ last_status) {
     last_status = cur_status;
-    if (cur_status == 0) {
+    if (!cur_status) {
       const auto diff_len =
           std::chrono::duration_cast<std::chrono::milliseconds>(t_now -
                                                                 t_change);
@@ -107,22 +138,33 @@ int MainWindow::running() {
       return 0;
     }
   } else {
-    return 0;
+    if (cur_status &&
+        std::chrono::duration_cast<std::chrono::milliseconds>(t_now - t_change)
+                .count() >= 30000) {
+      audio->get(30000, pcmf32);
+      t_change = t_now;
+    } else {
+      return 0;
+    }
   }
 
   std::string result = model->inference(params, pcmf32);
 
   std::cout << result << std::endl;
 
-  // auto callback = [this](const std::string &response) {
-  //   json data = json::parse(response);
-  //   std::string ai_response = data["choices"][0]["message"]["content"];
-  //   std::cout << "Response received: " << ai_response << std::endl;
-  //   // ui->logOutput->append(QString::fromStdString(ai_response));
-  //   // this->ui->logOutput->append(QString::fromStdString(ai_response));
-  // };
-  //
-  // mychat->send_async(result, callback);
+  ui->editor->appendPlainText("### User");
+  ui->editor->appendPlainText(QString::fromStdString(result));
+
+  auto callback = [this](const std::string &response) {
+    json data = json::parse(response);
+    std::string ai_response = data["choices"][0]["message"]["content"];
+    std::cout << "Response received: " << ai_response << std::endl;
+    QMetaObject::invokeMethod(
+        ui->editor, "appendPlainText", Qt::QueuedConnection,
+        Q_ARG(QString, QString::fromStdString(ai_response)));
+  };
+
+  mychat->send_async(result, callback);
 
   return 0;
 }

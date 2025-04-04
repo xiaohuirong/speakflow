@@ -4,10 +4,12 @@
 #include "chat.h"
 #include "common-sdl.h"
 #include "common.h"
+#include "document.h"
 #include "inference.h"
 #include "parse.h"
 
 #include <QMainWindow>
+#include <QString>
 #include <QTimer>
 #include <whisper.h>
 
@@ -37,15 +39,17 @@ private:
 
   wav_writer *wavWriter;
 
-  bool is_running;
+  bool is_running = false;
 
   std::chrono::time_point<std::chrono::high_resolution_clock> t_change;
-  bool last_status = 0;
+  bool last_status = false;
 
   QTimer *timer;
 
+  Document m_content;
+
 private slots:
   void handleClick();
-  int running();
+  auto running() -> int;
 };
 #endif // MAINWINDOW_H

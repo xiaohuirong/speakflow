@@ -6,6 +6,7 @@
 #include <cstdint>
 #include <cstdio>
 #include <fstream>
+#include <print>
 #include <string>
 
 S2T::S2T(whisper_params &params) {
@@ -48,7 +49,8 @@ S2T::~S2T() {
 static std::ofstream fout;
 
 // duration = (t_last - t_start).count()
-std::string S2T::inference(whisper_params &params, std::vector<float> pcmf32)
+auto S2T::inference(whisper_params &params, std::vector<float> pcmf32)
+    -> std::string
 // run the inference
 {
   std::string result;
@@ -58,7 +60,7 @@ std::string S2T::inference(whisper_params &params, std::vector<float> pcmf32)
 
   if (whisper_full(ctx, wparams, pcmf32.data(), pcmf32.size()) != 0) {
     // fprintf(stderr, "%s: failed to process audio\n", argv[0]);
-    return nullptr;
+    return {};
   }
 
   // print result;
@@ -92,7 +94,7 @@ std::string S2T::inference(whisper_params &params, std::vector<float> pcmf32)
 
         output += "\n";
 
-        printf("%s", output.c_str());
+        std::print("{}", output);
         fflush(stdout);
 
         if (params.fname_out.length() > 0) {
@@ -106,8 +108,8 @@ std::string S2T::inference(whisper_params &params, std::vector<float> pcmf32)
     }
 
     if (params.use_vad) {
-      printf("\n");
-      printf("### Transcription %d END\n", n_iter);
+      std::println("");
+      std::println("### Transcription {} END", n_iter);
     }
   }
 

@@ -7,7 +7,8 @@ class S2T {
 public:
   S2T(whisper_params &params);
   ~S2T();
-  std::string inference(whisper_params &params, std::vector<float> pcmf32);
+  auto inference(whisper_params &params, std::vector<float> pcmf32)
+      -> std::string;
 
 private:
   whisper_full_params wparams;
