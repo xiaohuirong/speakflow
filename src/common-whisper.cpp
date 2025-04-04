@@ -34,6 +34,7 @@
 
 #include <cstring>
 #include <fstream>
+#include <print>
 
 #ifdef WHISPER_FFMPEG
 // as implemented in ffmpeg_trancode.cpp only embedded in common lib if whisper
@@ -42,8 +43,11 @@ extern bool ffmpeg_decode_audio(const std::string &ifname,
                                 std::vector<uint8_t> &wav_data);
 #endif
 
-bool read_audio_data(const std::string &fname, std::vector<float> &pcmf32,
-                     std::vector<std::vector<float>> &pcmf32s, bool stereo) {
+using std::string;
+
+auto read_audio_data(const std::string &fname, std::vector<float> &pcmf32,
+                     std::vector<std::vector<float>> &pcmf32s, bool stereo)
+    -> bool {
   std::vector<uint8_t>
       audio_data; // used for pipe input from stdin or ffmpeg decoding output
 
@@ -72,14 +76,14 @@ bool read_audio_data(const std::string &fname, std::vector<float> &pcmf32,
                                          &decoder_config, &decoder)) !=
         MA_SUCCESS) {
 
-      fprintf(stderr, "Error: failed to open audio data from stdin (%s)\n",
-              ma_result_description(result));
+      std::println(stderr, "Error: failed to open audio data from stdin ({})",
+                   ma_result_description(result));
 
       return false;
     }
 
-    fprintf(stderr, "%s: read %zu bytes from stdin\n", __func__,
-            audio_data.size());
+    std::println(stderr, "{}: read {} bytes from stdin", __func__,
+                 audio_data.size());
   } else if (((result = ma_decoder_init_file(fname.c_str(), &decoder_config,
                                              &decoder)) != MA_SUCCESS)) {
 #if defined(WHISPER_FFMPEG)
@@ -101,8 +105,8 @@ bool read_audio_data(const std::string &fname, std::vector<float> &pcmf32,
     if ((result = ma_decoder_init_memory(fname.c_str(), fname.size(),
                                          &decoder_config, &decoder)) !=
         MA_SUCCESS) {
-      fprintf(stderr, "error: failed to read audio data as wav (%s)\n",
-              ma_result_description(result));
+      std::println(stderr, "error: failed to read audio data as wav ({})",
+                   ma_result_description(result));
 
       return false;
     }
@@ -114,9 +118,9 @@ bool read_audio_data(const std::string &fname, std::vector<float> &pcmf32,
 
   if ((result = ma_decoder_get_length_in_pcm_frames(&decoder, &frame_count)) !=
       MA_SUCCESS) {
-    fprintf(stderr,
-            "error: failed to retrieve the length of the audio data (%s)\n",
-            ma_result_description(result));
+    std::println(stderr,
+                 "error: failed to retrieve the length of the audio data ({})",
+                 ma_result_description(result));
 
     return false;
   }
@@ -125,8 +129,9 @@ bool read_audio_data(const std::string &fname, std::vector<float> &pcmf32,
 
   if ((result = ma_decoder_read_pcm_frames(&decoder, pcmf32.data(), frame_count,
                                            &frames_read)) != MA_SUCCESS) {
-    fprintf(stderr, "error: failed to read the frames of the audio data (%s)\n",
-            ma_result_description(result));
+    std::println(stderr,
+                 "error: failed to read the frames of the audio data ({})",
+                 ma_result_description(result));
 
     return false;
   }
@@ -148,7 +153,7 @@ bool read_audio_data(const std::string &fname, std::vector<float> &pcmf32,
 
 //  500 -> 00:05.000
 // 6000 -> 01:00.000
-std::string to_timestamp(int64_t t, bool comma) {
+auto to_timestamp(int64_t t, bool comma) -> std::string {
   int64_t msec = t * 10;
   int64_t hr = msec / (1000 * 60 * 60);
   msec = msec - hr * (1000 * 60 * 60);
@@ -161,19 +166,20 @@ std::string to_timestamp(int64_t t, bool comma) {
   snprintf(buf, sizeof(buf), "%02d:%02d:%02d%s%03d", (int)hr, (int)min,
            (int)sec, comma ? "," : ".", (int)msec);
 
-  return std::string(buf);
+  return string(buf);
 }
 
-int timestamp_to_sample(int64_t t, int n_samples, int whisper_sample_rate) {
+auto timestamp_to_sample(int64_t t, int n_samples, int whisper_sample_rate)
+    -> int {
   return std::max(
       0, std::min((int)n_samples - 1, (int)((t * whisper_sample_rate) / 100)));
 }
 
-bool speak_with_file(const std::string &command, const std::string &text,
-                     const std::string &path, int voice_id) {
+auto speak_with_file(const std::string &command, const std::string &text,
+                     const std::string &path, int voice_id) -> bool {
   std::ofstream speak_file(path.c_str());
   if (speak_file.fail()) {
-    fprintf(stderr, "%s: failed to open speak_file\n", __func__);
+    std::println(stderr, "{}: failed to open speak_file", __func__);
     return false;
   } else {
     speak_file.write(text.c_str(), text.size());
@@ -181,7 +187,7 @@ bool speak_with_file(const std::string &command, const std::string &text,
     int ret =
         system((command + " " + std::to_string(voice_id) + " " + path).c_str());
     if (ret != 0) {
-      fprintf(stderr, "%s: failed to speak\n", __func__);
+      std::println(stderr, "{}: failed to speak", __func__);
       return false;
     }
   }

@@ -41,20 +41,20 @@ struct gpt_params {
   int32_t interactive_port = -1;
 };
 
-bool gpt_params_parse(int argc, char **argv, gpt_params &params);
+auto gpt_params_parse(int argc, char **argv, gpt_params &params) -> bool;
 
 void gpt_print_usage(int argc, char **argv, const gpt_params &params);
 
-std::string gpt_random_prompt(std::mt19937 &rng);
+auto gpt_random_prompt(std::mt19937 &rng) -> std::string;
 
 //
 // Vocab utils
 //
 
-std::string trim(const std::string &s);
+auto trim(const std::string &s) -> std::string;
 
-std::string replace(const std::string &s, const std::string &from,
-                    const std::string &to);
+auto replace(const std::string &s, const std::string &from,
+             const std::string &to) -> std::string;
 
 struct gpt_vocab {
   using id = int32_t;
@@ -68,11 +68,11 @@ struct gpt_vocab {
 };
 
 // poor-man's JSON parsing
-std::map<std::string, int32_t> json_parse(const std::string &fname);
+auto json_parse(const std::string &fname) -> std::map<std::string, int32_t>;
 
-std::string convert_to_utf8(const std::wstring &input);
+auto convert_to_utf8(const std::wstring &input) -> std::string;
 
-std::wstring convert_to_wstring(const std::string &input);
+auto convert_to_wstring(const std::string &input) -> std::wstring;
 
 void gpt_split_words(std::string str, std::vector<std::string> &words);
 
@@ -89,8 +89,8 @@ void gpt_split_words(std::string str, std::vector<std::string> &words);
 // R"('s|'t|'re|'ve|'m|'ll|'d| ?[[:alpha:]]+| ?[[:digit:]]+|
 // ?[^\s[:alpha:][:digit:]]+|\s+(?!\S)|\s+)"
 //
-std::vector<gpt_vocab::id> gpt_tokenize(const gpt_vocab &vocab,
-                                        const std::string &text);
+auto gpt_tokenize(const gpt_vocab &vocab, const std::string &text)
+    -> std::vector<gpt_vocab::id>;
 
 // test outputs of gpt_tokenize
 //
@@ -103,7 +103,7 @@ std::vector<gpt_vocab::id> gpt_tokenize(const gpt_vocab &vocab,
 void test_gpt_tokenizer(gpt_vocab &vocab, const std::string &fpath_test);
 
 // load the tokens from encoder.json
-bool gpt_vocab_init(const std::string &fname, gpt_vocab &vocab);
+auto gpt_vocab_init(const std::string &fname, gpt_vocab &vocab) -> bool;
 
 // sample next token given probabilities for each embedding
 //
@@ -113,17 +113,16 @@ bool gpt_vocab_init(const std::string &fname, gpt_vocab &vocab);
 // TODO: not sure if this implementation is correct
 // TODO: temperature is not implemented
 //
-gpt_vocab::id gpt_sample_top_k_top_p(const gpt_vocab &vocab,
-                                     const float *logits, int top_k,
-                                     double top_p, double temp,
-                                     std::mt19937 &rng);
+auto gpt_sample_top_k_top_p(const gpt_vocab &vocab, const float *logits,
+                            int top_k, double top_p, double temp,
+                            std::mt19937 &rng) -> gpt_vocab::id;
 
-gpt_vocab::id
-gpt_sample_top_k_top_p_repeat(const gpt_vocab &vocab, const float *logits,
-                              const int32_t *last_n_tokens_data,
-                              size_t last_n_tokens_data_size, int top_k,
-                              double top_p, double temp, int repeat_last_n,
-                              float repeat_penalty, std::mt19937 &rng);
+auto gpt_sample_top_k_top_p_repeat(const gpt_vocab &vocab, const float *logits,
+                                   const int32_t *last_n_tokens_data,
+                                   size_t last_n_tokens_data_size, int top_k,
+                                   double top_p, double temp, int repeat_last_n,
+                                   float repeat_penalty, std::mt19937 &rng)
+    -> gpt_vocab::id;
 
 //
 // Audio utils
@@ -136,8 +135,8 @@ private:
   uint32_t dataSize = 0;
   std::string wav_filename;
 
-  bool write_header(const uint32_t sample_rate, const uint16_t bits_per_sample,
-                    const uint16_t channels) {
+  auto write_header(const uint32_t sample_rate, const uint16_t bits_per_sample,
+                    const uint16_t channels) -> bool {
 
     file.write("RIFF", 4);
     file.write("\0\0\0\0", 4); // Placeholder for file size
@@ -163,9 +162,9 @@ private:
   }
 
   // It is assumed that PCM data is normalized to a range from -1 to 1
-  bool write_audio(const float *data, size_t length) {
+  auto write_audio(const float *data, size_t length) -> bool {
     for (size_t i = 0; i < length; ++i) {
-      const int16_t intSample = int16_t(data[i] * 32767);
+      const auto intSample = int16_t(data[i] * 32767);
       file.write(reinterpret_cast<const char *>(&intSample), sizeof(int16_t));
       dataSize += sizeof(int16_t);
     }
@@ -180,7 +179,7 @@ private:
     return true;
   }
 
-  bool open_wav(const std::string &filename) {
+  auto open_wav(const std::string &filename) -> bool {
     if (filename != wav_filename) {
       if (file.is_open()) {
         file.close();
@@ -195,8 +194,8 @@ private:
   }
 
 public:
-  bool open(const std::string &filename, const uint32_t sample_rate,
-            const uint16_t bits_per_sample, const uint16_t channels) {
+  auto open(const std::string &filename, const uint32_t sample_rate,
+            const uint16_t bits_per_sample, const uint16_t channels) -> bool {
 
     if (open_wav(filename)) {
       write_header(sample_rate, bits_per_sample, channels);
@@ -207,12 +206,12 @@ public:
     return true;
   }
 
-  bool close() {
+  auto close() -> bool {
     file.close();
     return true;
   }
 
-  bool write(const float *data, size_t length) {
+  auto write(const float *data, size_t length) -> bool {
     return write_audio(data, length);
   }
 
@@ -229,11 +228,11 @@ void high_pass_filter(std::vector<float> &data, float cutoff,
                       float sample_rate);
 
 // Basic voice activity detection (VAD) using audio energy adaptive threshold
-bool vad_simple(std::vector<float> &pcmf32, int sample_rate, int last_ms,
-                float vad_thold, float freq_thold, bool verbose);
+auto vad_simple(std::vector<float> &pcmf32, int sample_rate, int last_ms,
+                float vad_thold, float freq_thold, bool verbose) -> bool;
 
 // compute similarity between two strings using Levenshtein distance
-float similarity(const std::string &s0, const std::string &s1);
+auto similarity(const std::string &s0, const std::string &s1) -> float;
 
 //
 // Terminal utils
@@ -245,7 +244,7 @@ float similarity(const std::string &s0, const std::string &s1);
 /**
  * Quantizes 24-bit RGB to xterm256 code range [16,256).
  */
-static int rgb2xterm256(int r, int g, int b) {
+static auto rgb2xterm256(int r, int g, int b) -> int {
   unsigned char cube[] = {0, 0137, 0207, 0257, 0327, 0377};
   int av, ir, ig, ib, il, qr, qg, qb, ql;
   av = r * .299 + g * .587 + b * .114 + .5;
@@ -259,7 +258,7 @@ static int rgb2xterm256(int r, int g, int b) {
   return il + 0350;
 }
 
-static std::string set_xterm256_foreground(int r, int g, int b) {
+static auto set_xterm256_foreground(int r, int g, int b) -> std::string {
   int x = rgb2xterm256(r, g, b);
   std::ostringstream oss;
   oss << "\033[38;5;" << x << "m";
@@ -283,4 +282,4 @@ const std::vector<std::string> k_colors = {
 //
 
 // check if file exists using ifstream
-bool is_file_exist(const char *filename);
+auto is_file_exist(const char *filename) -> bool;

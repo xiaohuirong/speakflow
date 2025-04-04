@@ -51,7 +51,8 @@ void print_whisper_params(const whisper_params &p) {
   PRINT_MEMBER(fname_out);
 }
 
-bool whisper_params_parse(int argc, char **argv, whisper_params &params) {
+auto whisper_params_parse(int argc, char **argv, whisper_params &params)
+    -> bool {
   CLI::App app{"Speakflow"};
   app.set_config("--config")->expected(1, 1);
 

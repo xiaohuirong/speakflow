@@ -25,7 +25,7 @@ class MainWindow : public QMainWindow {
 public:
   MainWindow(QWidget *parent = nullptr,
              const whisper_params &params = whisper_params());
-  ~MainWindow();
+  ~MainWindow() override;
 
 private:
   Ui::MainWindow *ui;

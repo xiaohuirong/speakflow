@@ -47,5 +47,6 @@ struct whisper_params {
   bool is_print = false;
 };
 
-bool whisper_params_parse(int argc, char **argv, whisper_params &params);
+auto whisper_params_parse(int argc, char **argv, whisper_params &params)
+    -> bool;
 void print_whisper_params(const whisper_params &p);

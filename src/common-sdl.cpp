@@ -1,6 +1,7 @@
 #include "common-sdl.h"
 
 #include <cstdio>
+#include <print>
 
 audio_async::audio_async(int len_ms) {
   m_len_ms = len_ms;
@@ -14,8 +15,8 @@ audio_async::~audio_async() {
   }
 }
 
-bool audio_async::init(int capture_id, int sample_rate,
-                       SDL_bool is_microphone) {
+auto audio_async::init(int capture_id, int sample_rate, SDL_bool is_microphone)
+    -> bool {
   SDL_LogSetPriority(SDL_LOG_CATEGORY_APPLICATION, SDL_LOG_PRIORITY_INFO);
 
   if (SDL_Init(SDL_INIT_AUDIO) < 0) {
@@ -29,10 +30,10 @@ bool audio_async::init(int capture_id, int sample_rate,
 
   {
     int nDevices = SDL_GetNumAudioDevices(is_microphone);
-    fprintf(stderr, "%s: found %d capture devices:\n", __func__, nDevices);
+    std::println(stderr, "{}: found {} capture devices:", __func__, nDevices);
     for (int i = 0; i < nDevices; i++) {
-      fprintf(stderr, "%s:    - Capture device #%d: '%s'\n", __func__, i,
-              SDL_GetAudioDeviceName(i, is_microphone));
+      std::println(stderr, "{}:    - Capture device #{}: '{}'", __func__, i,
+                   SDL_GetAudioDeviceName(i, is_microphone));
     }
   }
 
@@ -48,45 +49,46 @@ bool audio_async::init(int capture_id, int sample_rate,
   capture_spec_requested.samples = 1024;
   capture_spec_requested.callback = [](void *userdata, uint8_t *stream,
                                        int len) {
-    audio_async *audio = (audio_async *)userdata;
+    auto *audio = (audio_async *)userdata;
     audio->callback(stream, len);
   };
   capture_spec_requested.userdata = this;
 
   if (capture_id >= 0) {
-    fprintf(stderr, "%s: attempt to open capture device %d : '%s' ...\n",
-            __func__, capture_id,
-            SDL_GetAudioDeviceName(capture_id, is_microphone));
+    std::println(stderr, "{}: attempt to open capture device {} : '{}' ...",
+                 __func__, capture_id,
+                 SDL_GetAudioDeviceName(capture_id, is_microphone));
     m_dev_id_in = SDL_OpenAudioDevice(
         SDL_GetAudioDeviceName(capture_id, is_microphone), is_microphone,
         &capture_spec_requested, &capture_spec_obtained, 0);
   } else {
-    fprintf(stderr, "%s: attempt to open default capture device ...\n",
-            __func__);
+    std::println(stderr, "{}: attempt to open default capture device ...",
+                 __func__);
     m_dev_id_in =
         SDL_OpenAudioDevice(nullptr, is_microphone, &capture_spec_requested,
                             &capture_spec_obtained, 0);
   }
 
   if (!m_dev_id_in) {
-    fprintf(stderr, "%s: couldn't open an audio device for capture: %s!\n",
-            __func__, SDL_GetError());
+    std::println(stderr, "{}: couldn't open an audio device for capture: {}!",
+                 __func__, SDL_GetError());
     m_dev_id_in = 0;
 
     return false;
   } else {
-    fprintf(stderr, "%s: obtained spec for input device (SDL Id = %d):\n",
-            __func__, m_dev_id_in);
-    fprintf(stderr, "%s:     - sample rate:       %d\n", __func__,
-            capture_spec_obtained.freq);
-    fprintf(stderr, "%s:     - format:            %d (required: %d)\n",
-            __func__, capture_spec_obtained.format,
-            capture_spec_requested.format);
-    fprintf(stderr, "%s:     - channels:          %d (required: %d)\n",
-            __func__, capture_spec_obtained.channels,
-            capture_spec_requested.channels);
-    fprintf(stderr, "%s:     - samples per frame: %d\n", __func__,
-            capture_spec_obtained.samples);
+    std::println(stderr,
+                 "{}: obtained spec for input device (SDL Id = {}):", __func__,
+                 m_dev_id_in);
+    std::println(stderr, "{}:     - sample rate:       {}", __func__,
+                 capture_spec_obtained.freq);
+    std::println(stderr, "{}:     - format:            {} (required: {})",
+                 __func__, capture_spec_obtained.format,
+                 capture_spec_requested.format);
+    std::println(stderr, "{}:     - channels:          {} (required: {})",
+                 __func__, capture_spec_obtained.channels,
+                 capture_spec_requested.channels);
+    std::println(stderr, "{}:     - samples per frame: {}", __func__,
+                 capture_spec_obtained.samples);
   }
 
   m_sample_rate = capture_spec_obtained.freq;
@@ -96,14 +98,14 @@ bool audio_async::init(int capture_id, int sample_rate,
   return true;
 }
 
-bool audio_async::resume() {
+auto audio_async::resume() -> bool {
   if (!m_dev_id_in) {
-    fprintf(stderr, "%s: no audio device to resume!\n", __func__);
+    std::println(stderr, "{}: no audio device to resume!", __func__);
     return false;
   }
 
   if (m_running) {
-    fprintf(stderr, "%s: already running!\n", __func__);
+    std::println(stderr, "{}: already running!", __func__);
     return false;
   }
 
@@ -114,14 +116,14 @@ bool audio_async::resume() {
   return true;
 }
 
-bool audio_async::pause() {
+auto audio_async::pause() -> bool {
   if (!m_dev_id_in) {
-    fprintf(stderr, "%s: no audio device to pause!\n", __func__);
+    std::println(stderr, "{}: no audio device to pause!", __func__);
     return false;
   }
 
   if (!m_running) {
-    fprintf(stderr, "%s: already paused!\n", __func__);
+    std::println(stderr, "{}: already paused!", __func__);
     return false;
   }
 
@@ -132,14 +134,14 @@ bool audio_async::pause() {
   return true;
 }
 
-bool audio_async::clear() {
+auto audio_async::clear() -> bool {
   if (!m_dev_id_in) {
-    fprintf(stderr, "%s: no audio device to clear!\n", __func__);
+    std::println(stderr, "{}: no audio device to clear!", __func__);
     return false;
   }
 
   if (!m_running) {
-    fprintf(stderr, "%s: not running!\n", __func__);
+    std::println(stderr, "{}: not running!", __func__);
     return false;
   }
 
@@ -189,12 +191,12 @@ void audio_async::callback(uint8_t *stream, int len) {
 
 void audio_async::get(int ms, std::vector<float> &result) {
   if (!m_dev_id_in) {
-    fprintf(stderr, "%s: no audio device to get audio from!\n", __func__);
+    std::println(stderr, "{}: no audio device to get audio from!", __func__);
     return;
   }
 
   if (!m_running) {
-    fprintf(stderr, "%s: not running!\n", __func__);
+    std::println(stderr, "{}: not running!", __func__);
     return;
   }
 
@@ -230,7 +232,7 @@ void audio_async::get(int ms, std::vector<float> &result) {
   }
 }
 
-bool sdl_poll_events() {
+auto sdl_poll_events() -> bool {
   SDL_Event event;
   while (SDL_PollEvent(&event)) {
     switch (event.type) {

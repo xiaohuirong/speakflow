@@ -22,7 +22,7 @@ MainWindow::MainWindow(QWidget *parent, const whisper_params &params)
   auto *page = new PreviewPage(this);
   ui->preview->setPage(page);
 
-  connect(ui->preview, &QWebEngineView::loadFinished, this, [=](bool) {
+  connect(ui->preview, &QWebEngineView::loadFinished, this, [=, this](bool) {
     ui->preview->page()->runJavaScript(
         "window.scrollTo(0, document.body.scrollHeight);");
   });
@@ -158,7 +158,9 @@ auto MainWindow::running() -> int {
   auto callback = [this](const std::string &response) {
     json data = json::parse(response);
     std::string ai_response = data["choices"][0]["message"]["content"];
-    std::cout << "Response received: " << ai_response << std::endl;
+    QMetaObject::invokeMethod(ui->editor, "appendPlainText",
+                              Qt::QueuedConnection,
+                              Q_ARG(QString, QString::fromStdString("### AI")));
     QMetaObject::invokeMethod(
         ui->editor, "appendPlainText", Qt::QueuedConnection,
         Q_ARG(QString, QString::fromStdString(ai_response)));

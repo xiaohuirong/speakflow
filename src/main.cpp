@@ -7,7 +7,7 @@
 #include <nlohmann/json.hpp>
 #include <whisper.h>
 
-int main(int argc, char **argv) {
+auto main(int argc, char **argv) -> int {
   whisper_params params;
 
   if (whisper_params_parse(argc, argv, params) == false) {

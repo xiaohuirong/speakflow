@@ -75,7 +75,7 @@ auto S2T::inference(whisper_params &params, std::vector<float> pcmf32)
       }
 
       if (params.no_timestamps) {
-        printf("%s", text);
+        std::print("{}", text);
         fflush(stdout);
 
         if (params.fname_out.length() > 0) {

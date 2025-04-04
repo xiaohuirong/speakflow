@@ -9,15 +9,17 @@
 // The sample rate of the audio must be equal to COMMON_SAMPLE_RATE
 // If stereo flag is set and the audio has 2 channels, the pcmf32s will contain
 // 2 channel PCM
-bool read_audio_data(const std::string &fname, std::vector<float> &pcmf32,
-                     std::vector<std::vector<float>> &pcmf32s, bool stereo);
+auto read_audio_data(const std::string &fname, std::vector<float> &pcmf32,
+                     std::vector<std::vector<float>> &pcmf32s, bool stereo)
+    -> bool;
 
 // convert timestamp to string, 6000 -> 01:00.000
-std::string to_timestamp(int64_t t, bool comma = false);
+auto to_timestamp(int64_t t, bool comma = false) -> std::string;
 
 // given a timestamp get the sample
-int timestamp_to_sample(int64_t t, int n_samples, int whisper_sample_rate);
+auto timestamp_to_sample(int64_t t, int n_samples, int whisper_sample_rate)
+    -> int;
 
 // write text to file, and call system("command voice_id file")
-bool speak_with_file(const std::string &command, const std::string &text,
-                     const std::string &path, int voice_id);
+auto speak_with_file(const std::string &command, const std::string &text,
+                     const std::string &path, int voice_id) -> bool;

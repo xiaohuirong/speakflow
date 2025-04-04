@@ -1,4 +1,6 @@
 # https://clangd.llvm.org/config#diagnostics
+CompileFlags:
+  Remove: ['-mno-direct-extern-access']
 Diagnostics:
   ClangTidy:
     Add: modernize*

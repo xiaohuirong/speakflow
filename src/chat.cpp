@@ -6,7 +6,8 @@
 using json = nlohmann::json;
 
 // write callback function
-size_t WriteCallback(void *contents, size_t size, size_t nmemb, void *userp) {
+auto WriteCallback(void *contents, size_t size, size_t nmemb, void *userp)
+    -> size_t {
   ((std::string *)userp)->append((char *)contents, size * nmemb);
   return size * nmemb;
 }
@@ -32,7 +33,7 @@ void Chat::send_async(const std::string &input, Callback callback) {
     CURLcode res;
     std::string readBuffer;
 
-    curl_slist *headers = NULL;
+    curl_slist *headers = nullptr;
     headers = curl_slist_append(headers, "Content-Type: application/json");
     headers = curl_slist_append(headers, token);
 

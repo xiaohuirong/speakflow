@@ -9,8 +9,8 @@ public:
   explicit PreviewPage(QObject *parent = nullptr) : QWebEnginePage(parent) {}
 
 protected:
-  bool acceptNavigationRequest(const QUrl &url, NavigationType type,
-                               bool isMainFrame);
+  auto acceptNavigationRequest(const QUrl &url, NavigationType type,
+                               bool isMainFrame) -> bool override;
 };
 
 #endif // PREVIEWPAGE_H

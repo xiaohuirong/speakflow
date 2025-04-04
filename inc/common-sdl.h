@@ -17,13 +17,13 @@ public:
   audio_async(int len_ms);
   ~audio_async();
 
-  bool init(int capture_id, int sample_rate, SDL_bool is_microphone);
+  auto init(int capture_id, int sample_rate, SDL_bool is_microphone) -> bool;
 
   // start capturing audio via the provided SDL callback
   // keep last len_ms seconds of audio in a circular buffer
-  bool resume();
-  bool pause();
-  bool clear();
+  auto resume() -> bool;
+  auto pause() -> bool;
+  auto clear() -> bool;
 
   // callback to be called by SDL
   void callback(uint8_t *stream, int len);
@@ -46,4 +46,4 @@ private:
 };
 
 // Return false if need to quit
-bool sdl_poll_events();
+auto sdl_poll_events() -> bool;

@@ -2,9 +2,9 @@
 
 #include <QDesktopServices>
 
-bool PreviewPage::acceptNavigationRequest(
+auto PreviewPage::acceptNavigationRequest(
     const QUrl &url, QWebEnginePage::NavigationType /*type*/,
-    bool /*isMainFrame*/) {
+    bool /*isMainFrame*/) -> bool {
   // Only allow qrc:/index.html.
   if (url.scheme() == QString("qrc"))
     return true;
