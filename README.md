@@ -13,4 +13,4 @@ cmake -B build -S .
 make -C build
 ```
 
-![speakflow](https://github.com/xiaohuirong/images/raw/main/speakflow/ui.png?raw=true){: width="50%" }
+![speakflow](https://github.com/xiaohuirong/images/raw/main/speakflow/ui.png?raw=true)

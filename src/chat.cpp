@@ -1,70 +1,92 @@
 #include "chat.h"
+#include "liboai.h"
+#include <ostream>
+#include <print>
 #include <thread>
 
-#include <nlohmann/json.hpp>
+using namespace liboai;
 
-using json = nlohmann::json;
+Chat::Chat(whisper_params &params) : stopChat(false) {
 
-// write callback function
-auto WriteCallback(void *contents, size_t size, size_t nmemb, void *userp)
-    -> size_t {
-  ((std::string *)userp)->append((char *)contents, size * nmemb);
-  return size * nmemb;
-}
+  oai = new OpenAI(params.url);
 
-Chat::Chat(whisper_params &params) {
-  curl_global_init(CURL_GLOBAL_DEFAULT);
-  curl = curl_easy_init();
-
-  if (curl) {
-    curl_easy_setopt(curl, CURLOPT_URL, params.url.c_str());
-
-    token = params.token.c_str();
+  if (!oai->auth.SetKey(params.token)) {
+    std::println("auth failed!");
   }
 }
 
-Chat::~Chat() {
-  curl_easy_cleanup(curl);
-  curl_global_cleanup();
+void Chat::start() { chatThread = std::thread(&Chat::processMessages, this); }
+
+void Chat::stop() {
+  {
+    std::lock_guard<std::mutex> lock(queueMutex);
+    stopChat = true;
+  }
+  cv.notify_all();
+  chatThread.join();
 }
 
-void Chat::send_async(const std::string &input, Callback callback) {
-  std::thread([this, input, callback]() {
-    CURLcode res;
-    std::string readBuffer;
+void Chat::sendMessage(const std::string &messageText, Callback callback) {
+  {
+    std::lock_guard<std::mutex> lock(queueMutex);
+    messageQueue.push({messageText, callback});
+  }
+  cv.notify_one();
+}
 
-    curl_slist *headers = nullptr;
-    headers = curl_slist_append(headers, "Content-Type: application/json");
-    headers = curl_slist_append(headers, token);
+void Chat::processMessages() {
+  while (true) {
+    Message message = {.text = "", .callback = nullptr};
 
-    curl_easy_setopt(curl, CURLOPT_HTTPHEADER, headers);
+    {
+      std::unique_lock<std::mutex> lock(queueMutex);
+      cv.wait(lock, [this]() { return !messageQueue.empty() || stopChat; });
 
-    json request_data = {{"model", "deepseek-chat"},
-                         {
-                             "messages",
-                             json::array({
-                                 {{"role", "user"}, {"content", input}},
-                             }),
-                         },
-                         {"stream", false}};
+      if (stopChat && messageQueue.empty()) {
+        break;
+      }
 
-    std::string json_data = request_data.dump();
-    curl_easy_setopt(curl, CURLOPT_POSTFIELDS, json_data.c_str());
-    // set callback function
-    curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, WriteCallback);
-    curl_easy_setopt(curl, CURLOPT_WRITEDATA, &readBuffer);
-
-    res = curl_easy_perform(curl);
-
-    if (res != CURLE_OK) {
-      readBuffer =
-          "Curl request failed: " + std::string(curl_easy_strerror(res));
+      message = messageQueue.front();
+      messageQueue.pop();
     }
 
-    if (callback) {
-      callback(readBuffer);
+    std::cout << "Processing message: " << message.text << std::endl;
+
+    if (message.callback) {
+      std::string response = wait_response(message.text);
+      // callback
+      message.callback(response);
+    }
+  }
+}
+
+auto Chat::wait_response(const std::string input) -> std::string {
+  // add a message to the conversation
+  if (!convo.AddUserData(input)) {
+    return "This is a error: add a message failed";
+  }
+
+  try {
+    auto fut = oai->ChatCompletion->create_async("deepseek-chat", convo);
+
+    // check if the future is ready
+    fut.wait();
+
+    // get the contained response
+    auto response = fut.get();
+
+    // update our conversation with the response
+    if (!convo.Update(response)) {
+      std::println("update conversation failed");
+      return "This is a error: update conversation failed";
     }
 
-    curl_slist_free_all(headers);
-  }).detach();
+    // print the response
+    std::cout << convo.GetLastResponse() << std::endl;
+
+    return convo.GetLastResponse();
+  } catch (std::exception &e) {
+    std::cout << e.what() << std::endl;
+    return "This is a error: try fail";
+  }
 }

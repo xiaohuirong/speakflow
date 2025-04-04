@@ -7,7 +7,6 @@
 
 #include <QWebChannel>
 #include <chrono>
-#include <nlohmann/json.hpp>
 #include <print>
 #include <qtimer.h>
 
@@ -16,6 +15,7 @@ using json = nlohmann::json;
 MainWindow::MainWindow(QWidget *parent, const whisper_params &params)
     : QMainWindow(parent), ui(new Ui::MainWindow), params(params) {
   ui->setupUi(this);
+
   ui->editor->setFont(QFontDatabase::systemFont(QFontDatabase::FixedFont));
   ui->preview->setContextMenuPolicy(Qt::NoContextMenu);
 
@@ -35,6 +35,15 @@ MainWindow::MainWindow(QWidget *parent, const whisper_params &params)
   ui->preview->setUrl(QUrl("qrc:/index.html"));
 
   ui->statusbar->showMessage("Whisper未启动...");
+
+  namedCallback = [this](const std::string &response) {
+    QMetaObject::invokeMethod(ui->editor, "appendPlainText",
+                              Qt::QueuedConnection,
+                              Q_ARG(QString, QString::fromStdString("### AI")));
+    QMetaObject::invokeMethod(ui->editor, "appendPlainText",
+                              Qt::QueuedConnection,
+                              Q_ARG(QString, QString::fromStdString(response)));
+  };
 
   // init audio
   audio = new audio_async(params.length_ms);
@@ -85,8 +94,9 @@ MainWindow::MainWindow(QWidget *parent, const whisper_params &params)
 }
 
 MainWindow::~MainWindow() {
-  delete ui;
   audio->pause();
+  mychat->stop();
+  delete ui;
   delete model;
   delete mychat;
 }
@@ -97,6 +107,7 @@ void MainWindow::handleClick() {
     ui->clickButton->setText("停止");
     ui->statusbar->showMessage("Whisper实时记录中...");
     audio->resume();
+    mychat->start();
     t_change = std::chrono::high_resolution_clock::now();
     timer->start(2000);
   } else {
@@ -104,6 +115,7 @@ void MainWindow::handleClick() {
     ui->clickButton->setText("启动");
     ui->statusbar->showMessage("Whisper未启动...");
     audio->pause();
+    mychat->stop();
     timer->stop();
   }
 }
@@ -144,23 +156,12 @@ auto MainWindow::running() -> int {
     }
   }
 
-  std::string result = model->inference(params, pcmf32);
+  std::string message = model->inference(params, pcmf32);
 
   ui->editor->appendPlainText("### User");
-  ui->editor->appendPlainText(QString::fromStdString(result));
+  ui->editor->appendPlainText(QString::fromStdString(message));
 
-  auto callback = [this](const std::string &response) {
-    json data = json::parse(response);
-    std::string ai_response = data["choices"][0]["message"]["content"];
-    QMetaObject::invokeMethod(ui->editor, "appendPlainText",
-                              Qt::QueuedConnection,
-                              Q_ARG(QString, QString::fromStdString("### AI")));
-    QMetaObject::invokeMethod(
-        ui->editor, "appendPlainText", Qt::QueuedConnection,
-        Q_ARG(QString, QString::fromStdString(ai_response)));
-  };
-
-  // mychat->send_async(result, callback);
+  mychat->sendMessage(message, namedCallback);
 
   return 0;
 }

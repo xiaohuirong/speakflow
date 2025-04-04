@@ -4,7 +4,6 @@
 
 #include <QApplication>
 #include <cstdio>
-#include <nlohmann/json.hpp>
 #include <whisper.h>
 
 auto main(int argc, char **argv) -> int {

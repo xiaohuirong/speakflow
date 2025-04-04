@@ -121,8 +121,6 @@ auto whisper_params_parse(int argc, char **argv, whisper_params &params)
                           ? std::max(1, params.length_ms / params.step_ms - 1)
                           : 1; // number of steps to print new line
 
-  params.token = "Authorization: Bearer " + params.token;
-
   if (params.is_print) {
     print_whisper_params(params);
     exit(0);

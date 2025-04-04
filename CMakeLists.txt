@@ -8,9 +8,9 @@ find_package(SDL2 REQUIRED)
 find_package(whisper REQUIRED)
 find_package(PkgConfig REQUIRED)
 pkg_check_modules(libcurl REQUIRED libcurl)
-find_package(nlohmann_json REQUIRED)
 find_package(CLI11 REQUIRED)
 find_package(Qt6 REQUIRED COMPONENTS Widgets WebEngineWidgets)
+add_subdirectory(dep/liboai)
 
 file(GLOB SOURCES src/*.cpp res/*.qrc)
 
@@ -24,9 +24,10 @@ set(CMAKE_AUTORCC ON)
 
 add_executable(${PROJECT_NAME} ${SOURCES} ${UI_HEADERS} ${MOC_SOURCES})
 
-target_include_directories(${PROJECT_NAME} PRIVATE inc ${libcurl_INCLUDE_DIRS}
-                                                   ${CMAKE_BINARY_DIR})
+target_include_directories(
+  ${PROJECT_NAME} PRIVATE inc ${libcurl_INCLUDE_DIRS} ${CMAKE_BINARY_DIR}
+                          ${CMAKE_SOURCE_DIR}/dep/liboai/liboai/include)
 
 target_link_libraries(
   ${PROJECT_NAME} PRIVATE ${SDL2_LIBRARIES} whisper ${libcurl_LIBRARIES}
-                          Qt6::Widgets Qt6::WebEngineWidgets)
+                          Qt6::Widgets Qt6::WebEngineWidgets oai)
