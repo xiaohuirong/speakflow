@@ -7,8 +7,8 @@
 
 #include <QWebChannel>
 #include <chrono>
-#include <iostream>
 #include <nlohmann/json.hpp>
+#include <print>
 #include <qtimer.h>
 
 using json = nlohmann::json;
@@ -19,13 +19,8 @@ MainWindow::MainWindow(QWidget *parent, const whisper_params &params)
   ui->editor->setFont(QFontDatabase::systemFont(QFontDatabase::FixedFont));
   ui->preview->setContextMenuPolicy(Qt::NoContextMenu);
 
-  auto *page = new PreviewPage(this);
+  page = new PreviewPage(this);
   ui->preview->setPage(page);
-
-  connect(ui->preview, &QWebEngineView::loadFinished, this, [=, this](bool) {
-    ui->preview->page()->runJavaScript(
-        "window.scrollTo(0, document.body.scrollHeight);");
-  });
 
   connect(ui->editor, &QPlainTextEdit::textChanged,
           [this]() { m_content.setText(ui->editor->toPlainText()); });
@@ -45,14 +40,14 @@ MainWindow::MainWindow(QWidget *parent, const whisper_params &params)
   audio = new audio_async(params.length_ms);
   if (!audio->init(params.capture_id, WHISPER_SAMPLE_RATE,
                    (SDL_bool)params.is_microphone)) {
-    fprintf(stderr, "%s: audio.init() failed!\n", __func__);
+    std::println(stderr, "{}: audio.init() failed!", __func__);
     exit(-1);
   }
 
   // whisper init
   if (params.language != "auto" &&
       whisper_lang_id(params.language.c_str()) == -1) {
-    fprintf(stderr, "error: unknown language '%s'\n", params.language.c_str());
+    std::println(stderr, "error: unknown language '{}'", params.language);
     // whisper_print_usage(argc, argv, params);
     exit(0);
   }
@@ -67,8 +62,8 @@ MainWindow::MainWindow(QWidget *parent, const whisper_params &params)
   if (params.fname_out.length() > 0) {
     fout.open(params.fname_out);
     if (!fout.is_open()) {
-      fprintf(stderr, "%s: failed to open output file '%s'!\n", __func__,
-              params.fname_out.c_str());
+      std::println(stderr, "{}: failed to open output file '{}'!", __func__,
+                   params.fname_out);
       exit(-1);
     }
   }
@@ -114,6 +109,7 @@ void MainWindow::handleClick() {
 }
 
 auto MainWindow::running() -> int {
+  page->scrollToBottom();
 
   // main audio loop
   if (params.save_audio) {
@@ -150,8 +146,6 @@ auto MainWindow::running() -> int {
 
   std::string result = model->inference(params, pcmf32);
 
-  std::cout << result << std::endl;
-
   ui->editor->appendPlainText("### User");
   ui->editor->appendPlainText(QString::fromStdString(result));
 
@@ -166,7 +160,7 @@ auto MainWindow::running() -> int {
         Q_ARG(QString, QString::fromStdString(ai_response)));
   };
 
-  mychat->send_async(result, callback);
+  // mychat->send_async(result, callback);
 
   return 0;
 }

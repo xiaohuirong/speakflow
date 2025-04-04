@@ -7,6 +7,7 @@
 #include "document.h"
 #include "inference.h"
 #include "parse.h"
+#include "previewpage.h"
 
 #include <QMainWindow>
 #include <QString>
@@ -47,6 +48,8 @@ private:
   QTimer *timer;
 
   Document m_content;
+
+  PreviewPage *page;
 
 private slots:
   void handleClick();

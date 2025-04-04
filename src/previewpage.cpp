@@ -2,6 +2,10 @@
 
 #include <QDesktopServices>
 
+void PreviewPage::scrollToBottom() {
+  runJavaScript("window.scrollTo(0, document.body.scrollHeight);");
+}
+
 auto PreviewPage::acceptNavigationRequest(
     const QUrl &url, QWebEnginePage::NavigationType /*type*/,
     bool /*isMainFrame*/) -> bool {

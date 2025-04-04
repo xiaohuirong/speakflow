@@ -4,7 +4,7 @@
 
 1. install depends
 ```bash
-sudo pacman -S make cmake gcc curl pkgconf nlohmann-json whisper.cpp-git cli11
+sudo pacman -S make cmake gcc curl pkgconf nlohmann-json whisper.cpp-git cli11 qt6-base stb
 ```
 
 2. compile
@@ -13,5 +13,4 @@ cmake -B build -S .
 make -C build
 ```
 
-![speakflow](https://github.com/xiaohuirong/images/raw/main/speakflow/ui.png?raw=true)
-
+![speakflow](https://github.com/xiaohuirong/images/raw/main/speakflow/ui.png?raw=true){: width="50%" }
