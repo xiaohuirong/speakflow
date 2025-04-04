@@ -82,7 +82,7 @@ bool whisper_params_parse(int argc, char **argv, whisper_params &params) {
                "do not use temperature fallback");
   app.add_flag("--ps,--print-special", params.print_special,
                "print special tokens");
-  app.add_flag("--kc,--keep-context", params.no_context,
+  app.add_flag("--no-context", params.no_context,
                "keep context between audio chunks")
       ->default_val(true)
       ->transform(CLI::IsMember({true, false}));

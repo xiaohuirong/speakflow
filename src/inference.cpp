@@ -1,25 +1,24 @@
 #include "inference.h"
 #include "common-whisper.h"
+#include "mylog.h"
+#include "parse.h"
 
 #include <cstdint>
 #include <cstdio>
 #include <fstream>
 #include <string>
 
-static int n_iter = 0;
-std::ofstream fout;
+S2T::S2T(whisper_params &params) {
 
-// duration = (t_last - t_start).count()
-std::string inference(whisper_params &params,
-                      std::vector<whisper_token> &prompt_tokens,
-                      whisper_context *ctx, std::vector<float> &pcmf32,
-                      int64_t duration, std::vector<float> &pcmf32_old)
-// run the inference
-{
-  std::string result;
-  whisper_full_params wparams = whisper_full_default_params(
-      params.beam_size > 1 ? WHISPER_SAMPLING_BEAM_SEARCH
-                           : WHISPER_SAMPLING_GREEDY);
+  cparams.use_gpu = params.use_gpu;
+  cparams.flash_attn = params.flash_attn;
+  ctx = whisper_init_from_file_with_params(params.model.c_str(), cparams);
+
+  print_process_info(params, ctx);
+
+  wparams = whisper_full_default_params(params.beam_size > 1
+                                            ? WHISPER_SAMPLING_BEAM_SEARCH
+                                            : WHISPER_SAMPLING_GREEDY);
 
   wparams.print_progress = false;
   wparams.print_special = params.print_special;
@@ -39,6 +38,20 @@ std::string inference(whisper_params &params,
   // disable temperature fallback
   // wparams.temperature_inc  = -1.0f;
   wparams.temperature_inc = params.no_fallback ? 0.0f : wparams.temperature_inc;
+}
+
+S2T::~S2T() {
+  whisper_print_timings(ctx);
+  whisper_free(ctx);
+}
+
+static std::ofstream fout;
+
+// duration = (t_last - t_start).count()
+std::string S2T::inference(whisper_params &params, std::vector<float> pcmf32)
+// run the inference
+{
+  std::string result;
 
   wparams.prompt_tokens = params.no_context ? nullptr : prompt_tokens.data();
   wparams.prompt_n_tokens = params.no_context ? 0 : prompt_tokens.size();
@@ -50,30 +63,14 @@ std::string inference(whisper_params &params,
 
   // print result;
   {
-    if (!params.use_vad) {
-      printf("\33[2K\r");
-
-      // print long empty line to clear the previous line
-      printf("%s", std::string(100, ' ').c_str());
-
-      printf("\33[2K\r");
-    } else {
-      const int64_t t1 = duration / 1000000;
-      const int64_t t0 =
-          std::max(0.0, t1 - pcmf32.size() * 1000.0 / WHISPER_SAMPLE_RATE);
-
-      printf("\n");
-      printf("### Transcription %d START | t0 = %d ms | t1 = %d ms\n", n_iter,
-             (int)t0, (int)t1);
-      printf("\n");
-    }
-
     const int n_segments = whisper_full_n_segments(ctx);
     for (int i = 0; i < n_segments; ++i) {
       const char *text = whisper_full_get_segment_text(ctx, i);
 
       result += text;
-      result += ",";
+      if (i != n_segments - 1) {
+        result += ",";
+      }
 
       if (params.no_timestamps) {
         printf("%s", text);
@@ -116,27 +113,19 @@ std::string inference(whisper_params &params,
 
   ++n_iter;
 
-  if (!params.use_vad && (n_iter % params.n_new_line) == 0) {
-    printf("\n");
+  // Add tokens of the last full length segment as the prompt
+  if (!params.no_context) {
+    prompt_tokens.clear();
 
-    // keep part of the audio for next iteration to try to mitigate word
-    // boundary issues
-    pcmf32_old =
-        std::vector<float>(pcmf32.end() - params.n_samples_keep, pcmf32.end());
-
-    // Add tokens of the last full length segment as the prompt
-    if (!params.no_context) {
-      prompt_tokens.clear();
-
-      const int n_segments = whisper_full_n_segments(ctx);
-      for (int i = 0; i < n_segments; ++i) {
-        const int token_count = whisper_full_n_tokens(ctx, i);
-        for (int j = 0; j < token_count; ++j) {
-          prompt_tokens.push_back(whisper_full_get_token_id(ctx, i, j));
-        }
+    const int n_segments = whisper_full_n_segments(ctx);
+    for (int i = 0; i < n_segments; ++i) {
+      const int token_count = whisper_full_n_tokens(ctx, i);
+      for (int j = 0; j < token_count; ++j) {
+        prompt_tokens.push_back(whisper_full_get_token_id(ctx, i, j));
       }
     }
   }
+
   fflush(stdout);
   return result;
 }
