@@ -12,3 +12,6 @@ sudo pacman -S make cmake gcc curl pkgconf nlohmann-json whisper.cpp-git cli11
 cmake -B build -S .
 make -C build
 ```
+
+![speakflow](https://github.com/xiaohuirong/images/raw/main/speakflow/ui.png?raw=true)
+
