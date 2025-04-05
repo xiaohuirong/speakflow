@@ -36,13 +36,14 @@ MainWindow::MainWindow(QWidget *parent, const whisper_params &params)
 
   ui->statusbar->showMessage("Whisper未启动...");
 
-  namedCallback = [this](const std::string &response) {
+  namedCallback = [this](const std::string &message, bool is_response) {
     QMetaObject::invokeMethod(ui->editor, "appendPlainText",
                               Qt::QueuedConnection,
-                              Q_ARG(QString, QString::fromStdString("### AI")));
-    QMetaObject::invokeMethod(ui->editor, "appendPlainText",
-                              Qt::QueuedConnection,
-                              Q_ARG(QString, QString::fromStdString(response)));
+                              Q_ARG(QString, QString::fromStdString(message)));
+    if (!is_response) {
+      QMetaObject::invokeMethod(ui->queue, "dequeueMessage",
+                                Qt::QueuedConnection);
+    }
   };
 
   // init audio
@@ -81,7 +82,7 @@ MainWindow::MainWindow(QWidget *parent, const whisper_params &params)
     wavWriter = new wav_writer();
 
     // Get current date/time for filename
-    time_t now = time(0);
+    time_t now = time(nullptr);
     char buffer[80];
     strftime(buffer, sizeof(buffer), "%Y%m%d%H%M%S", localtime(&now));
     std::string filename = std::string(buffer) + ".wav";
@@ -94,8 +95,10 @@ MainWindow::MainWindow(QWidget *parent, const whisper_params &params)
 }
 
 MainWindow::~MainWindow() {
-  audio->pause();
-  mychat->stop();
+  if (is_running) {
+    audio->pause();
+    mychat->stop();
+  }
   delete ui;
   delete model;
   delete mychat;
@@ -121,7 +124,7 @@ void MainWindow::handleClick() {
 }
 
 auto MainWindow::running() -> int {
-  page->scrollToBottom();
+  // page->scrollToBottom();
 
   // main audio loop
   if (params.save_audio) {
@@ -157,11 +160,10 @@ auto MainWindow::running() -> int {
   }
 
   std::string message = model->inference(params, pcmf32);
-
-  ui->editor->appendPlainText("### User");
-  ui->editor->appendPlainText(QString::fromStdString(message));
-
-  mychat->sendMessage(message, namedCallback);
+  if (message != "") {
+    ui->queue->enqueueMessage(QString::fromStdString(message));
+    mychat->sendMessage(message, namedCallback);
+  }
 
   return 0;
 }

@@ -15,7 +15,7 @@ add_subdirectory(dep/liboai)
 file(GLOB SOURCES src/*.cpp res/*.qrc)
 
 set(UI_FILES ui/mainwindow.ui)
-set(MOC_HEADERS inc/mainwindow.h inc/document.h inc/previewpage.h)
+set(MOC_HEADERS inc/mainwindow.h inc/document.h inc/previewpage.h inc/messagequeue.h)
 
 qt6_wrap_ui(UI_HEADERS ${UI_FILES})
 qt6_wrap_cpp(MOC_SOURCES ${MOC_HEADERS})

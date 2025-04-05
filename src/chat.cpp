@@ -10,7 +10,9 @@ Chat::Chat(whisper_params &params) : stopChat(false) {
 
   oai = new OpenAI(params.url);
 
-  if (!oai->auth.SetKey(params.token)) {
+  key = params.token;
+
+  if (!oai->auth.SetKey(key)) {
     std::println("auth failed!");
   }
 }
@@ -52,10 +54,12 @@ void Chat::processMessages() {
 
     std::cout << "Processing message: " << message.text << std::endl;
 
+    message.callback("### USER\n" + message.text, false);
+
     if (message.callback) {
       std::string response = wait_response(message.text);
       // callback
-      message.callback(response);
+      message.callback("### AI\n" + response, true);
     }
   }
 }
@@ -66,27 +70,31 @@ auto Chat::wait_response(const std::string input) -> std::string {
     return "This is a error: add a message failed";
   }
 
-  try {
-    auto fut = oai->ChatCompletion->create_async("deepseek-chat", convo);
+  if (oai->auth.SetKey(key)) {
+    try {
+      auto fut = oai->ChatCompletion->create_async("deepseek-chat", convo);
 
-    // check if the future is ready
-    fut.wait();
+      // check if the future is ready
+      fut.wait();
 
-    // get the contained response
-    auto response = fut.get();
+      // get the contained response
+      auto response = fut.get();
 
-    // update our conversation with the response
-    if (!convo.Update(response)) {
-      std::println("update conversation failed");
-      return "This is a error: update conversation failed";
+      // update our conversation with the response
+      if (!convo.Update(response)) {
+        std::println("update conversation failed");
+        return "This is a error: update conversation failed";
+      }
+
+      // print the response
+      std::cout << convo.GetLastResponse() << std::endl;
+
+      return convo.GetLastResponse();
+    } catch (std::exception &e) {
+      std::cout << e.what() << std::endl;
+      return "This is a error: try fail";
     }
-
-    // print the response
-    std::cout << convo.GetLastResponse() << std::endl;
-
-    return convo.GetLastResponse();
-  } catch (std::exception &e) {
-    std::cout << e.what() << std::endl;
-    return "This is a error: try fail";
+  } else {
+    return "This is a error: auth fail";
   }
 }

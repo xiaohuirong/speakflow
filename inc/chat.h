@@ -14,7 +14,7 @@ using namespace liboai;
 
 class Chat {
 public:
-  using Callback = std::function<void(const std::string &)>;
+  using Callback = std::function<void(const std::string &, bool)>;
 
   struct Message {
     std::string text;
@@ -39,4 +39,5 @@ private:
 
   OpenAI *oai;
   Conversation convo;
+  std::string key;
 };

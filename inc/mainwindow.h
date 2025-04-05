@@ -51,7 +51,7 @@ private:
 
   PreviewPage *page;
 
-  std::function<void(const std::string &)> namedCallback;
+  std::function<void(const std::string &, bool)> namedCallback;
 
 private slots:
   void handleClick();
