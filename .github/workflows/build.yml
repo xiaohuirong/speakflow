@@ -54,11 +54,16 @@ jobs:
       with:
         architecture: x64
 
-    - uses: MinoruSekine/setup-scoop@v4.0.1
+    - name: MYSYS2
       if: runner.os == 'Windows'
-      with:
-        buckets: extras
-        # apps: doxygen plantuml
+      run: |
+        pacman -S mingw-w64-x86_64-zlib mingw-w64-x86_64-nlohmann-json mingw-w64-x86_64-curl mingw-w64-x86_64-openssl mingw-w64-x86_64-SDL2
+
+    # - uses: MinoruSekine/setup-scoop@v4.0.1
+    #   if: runner.os == 'Windows'
+    #   with:
+    #     buckets: extras
+    #     apps: zlib 
 
     - uses: Jimver/cuda-toolkit@master
       if: runner.os == 'Windows'
@@ -70,6 +75,13 @@ jobs:
       if: runner.os == 'Linux'
       run: |
         sudo apt install make cmake nlohmann-json3-dev libsdl2-dev nvidia-cuda-toolkit libcurl4-openssl-dev
+
+    - name: Set up GCC
+      if: runner.os == 'Linux'
+      uses: egor-tensin/setup-gcc@v1
+      with:
+        version: latest
+        platform: x64
         
     - name: Install Qt6
       uses: jurplel/install-qt-action@v4
@@ -77,27 +89,49 @@ jobs:
         modules: 'qtwebengine qtwebchannel qtpositioning'
         version: '6.9.0'
 
-    - name: Setup tmate session
-      uses: mxschmitt/action-tmate@v3
+    # - name: Setup tmate session
+    #   uses: mxschmitt/action-tmate@v3
 
     - name: Prepare Build
       run: cmake -B build -S . -DCMAKE_BUILD_TYPE=Release -DGGML_CUDA=1
+
+    - name: Configure CMake on Linux
+      if: runner.os == 'Linux'
+      run: |
+        cmake -B build \
+              -DCMAKE_CXX_COMPILER=${{ matrix.cpp_compiler }} \
+              -DCMAKE_C_COMPILER=${{ matrix.c_compiler }} \
+              -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} \
+              -S ${{ github.workspace }}
+
+    - name: Configure CMake on Windows
+      if: runner.os == 'Windows'
+      run: |
+        cmake -B build `
+              -DCMAKE_CXX_COMPILER=${{ matrix.cpp_compiler }} `
+              -DCMAKE_C_COMPILER=${{ matrix.c_compiler }} `
+              -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} `
+              -DZLIB_LIBRARY="C:/msys64/mingw64/lib/libz.dll.a" `
+              -DZLIB_INCLUDE_DIR="C:/msys64/mingw64/include" `
+              -DOPENSSL_INCLUDE_DIR="C:/msys64/mingw64/include" `
+              -DOPENSSL_LIBRARIES="C:/msys64/mingw64/lib" `
+              -S ${{ github.workspace }}
       
     - name: Run Build
-      run: make -C build
+      run: cmake --build build
       
     - name: windeployqt
       if: runner.os == 'Windows'
       run: |
         mkdir target
-        cp ./build/speakflow.exe target/
-        windeployqt ./target/speakflow.exe
+        windeployqt ./build/speakflow.exe
+        cp ./build target/ -r
 
     - name: copy to target
       if: runner.os == 'Linux'
       run: |
         mkdir target
-        cp ./build/speakflow target/
+        cp ./build target/ -r
 
     - uses: actions/upload-artifact@v4
       with:
