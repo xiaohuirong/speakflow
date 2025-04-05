@@ -49,6 +49,8 @@ void print_whisper_params(const whisper_params &p) {
   PRINT_MEMBER(language);
   PRINT_MEMBER(model);
   PRINT_MEMBER(fname_out);
+
+  PRINT_MEMBER(timeout);
 }
 
 auto whisper_params_parse(int argc, char **argv, whisper_params &params)
@@ -101,6 +103,7 @@ auto whisper_params_parse(int argc, char **argv, whisper_params &params)
                "flash attention during inference");
   app.add_flag("--im,--is-microphone", params.is_microphone,
                "select microphone as input");
+  app.add_option("--timeout", params.timeout, "API request timeout(ms)");
 
   CLI11_PARSE(app, argc, argv);
 

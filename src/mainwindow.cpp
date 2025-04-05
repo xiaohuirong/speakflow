@@ -162,7 +162,7 @@ auto MainWindow::running() -> int {
   std::string message = model->inference(params, pcmf32);
   if (message != "") {
     ui->queue->enqueueMessage(QString::fromStdString(message));
-    mychat->sendMessage(message, namedCallback);
+    mychat->addMessage(message, namedCallback);
   }
 
   return 0;

@@ -25,7 +25,7 @@ public:
 
   void start();
   void stop();
-  void sendMessage(const std::string &messageText, Callback callback);
+  void addMessage(const std::string &messageText, Callback callback);
 
 private:
   void processMessages();
@@ -40,4 +40,5 @@ private:
   OpenAI *oai;
   Conversation convo;
   std::string key;
+  int message_count = 0;
 };

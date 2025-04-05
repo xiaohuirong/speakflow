@@ -15,6 +15,8 @@ Chat::Chat(whisper_params &params) : stopChat(false) {
   if (!oai->auth.SetKey(key)) {
     std::println("auth failed!");
   }
+
+  oai->auth.SetMaxTimeout(params.timeout);
 }
 
 void Chat::start() { chatThread = std::thread(&Chat::processMessages, this); }
@@ -28,7 +30,7 @@ void Chat::stop() {
   chatThread.join();
 }
 
-void Chat::sendMessage(const std::string &messageText, Callback callback) {
+void Chat::addMessage(const std::string &messageText, Callback callback) {
   {
     std::lock_guard<std::mutex> lock(queueMutex);
     messageQueue.push({messageText, callback});
@@ -53,13 +55,16 @@ void Chat::processMessages() {
     }
 
     std::cout << "Processing message: " << message.text << std::endl;
+    message_count += 1;
 
-    message.callback("### USER\n" + message.text, false);
+    message.callback(
+        std::format("### USER {} \n", message_count) + message.text, false);
 
     if (message.callback) {
       std::string response = wait_response(message.text);
       // callback
-      message.callback("### AI\n" + response, true);
+      message.callback(std::format("### AI {} \n", message_count) + response,
+                       true);
     }
   }
 }
@@ -70,31 +75,27 @@ auto Chat::wait_response(const std::string input) -> std::string {
     return "This is a error: add a message failed";
   }
 
-  if (oai->auth.SetKey(key)) {
-    try {
-      auto fut = oai->ChatCompletion->create_async("deepseek-chat", convo);
+  try {
+    auto fut = oai->ChatCompletion->create_async("deepseek-chat", convo);
 
-      // check if the future is ready
-      fut.wait();
+    // check if the future is ready
+    fut.wait();
 
-      // get the contained response
-      auto response = fut.get();
+    // get the contained response
+    auto response = fut.get();
 
-      // update our conversation with the response
-      if (!convo.Update(response)) {
-        std::println("update conversation failed");
-        return "This is a error: update conversation failed";
-      }
-
-      // print the response
-      std::cout << convo.GetLastResponse() << std::endl;
-
-      return convo.GetLastResponse();
-    } catch (std::exception &e) {
-      std::cout << e.what() << std::endl;
-      return "This is a error: try fail";
+    // update our conversation with the response
+    if (!convo.Update(response)) {
+      std::println("update conversation failed");
+      return "This is a error: update conversation failed";
     }
-  } else {
-    return "This is a error: auth fail";
+
+    // print the response
+    std::cout << convo.GetLastResponse() << std::endl;
+
+    return convo.GetLastResponse();
+  } catch (std::exception &e) {
+    std::cout << e.what() << std::endl;
+    return "This is a error: try fail";
   }
 }

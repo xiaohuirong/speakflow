@@ -45,6 +45,8 @@ struct whisper_params {
   std::string fname_out;
 
   bool is_print = false;
+
+  int32_t timeout = 30000;
 };
 
 auto whisper_params_parse(int argc, char **argv, whisper_params &params)
