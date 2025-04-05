@@ -1,3 +1,9 @@
 [submodule "dep/liboai"]
 	path = dep/liboai
 	url = https://github.com/D7EAD/liboai.git
+[submodule "dep/whisper"]
+	path = dep/whisper
+	url = https://github.com/ggml-org/whisper.cpp.git
+[submodule "dep/cli11"]
+	path = dep/cli11
+	url = https://github.com/CLIUtils/CLI11
