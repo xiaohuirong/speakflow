@@ -10,8 +10,6 @@
 #include <print>
 #include <qtimer.h>
 
-using json = nlohmann::json;
-
 MainWindow::MainWindow(QWidget *parent, const whisper_params &params)
     : QMainWindow(parent), ui(new Ui::MainWindow), params(params) {
   ui->setupUi(this);
