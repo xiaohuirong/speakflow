@@ -47,6 +47,10 @@ struct whisper_params {
   bool is_print = false;
 
   int32_t timeout = 30000;
+
+  std::string llm = "gemma3:4b";
+
+  std::string prompt = "";
 };
 
 auto whisper_params_parse(int argc, char **argv, whisper_params &params)

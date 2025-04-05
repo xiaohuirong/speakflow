@@ -41,4 +41,6 @@ private:
   Conversation convo;
   std::string key;
   int message_count = 0;
+
+  std::string model;
 };

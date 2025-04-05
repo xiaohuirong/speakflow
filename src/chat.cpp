@@ -11,6 +11,7 @@ Chat::Chat(whisper_params &params) : stopChat(false) {
   oai = new OpenAI(params.url);
 
   key = params.token;
+  model = params.llm;
 
   if (!oai->auth.SetKey(key)) {
     std::println("auth failed!");
@@ -76,7 +77,7 @@ auto Chat::wait_response(const std::string input) -> std::string {
   }
 
   try {
-    auto fut = oai->ChatCompletion->create_async("deepseek-chat", convo);
+    auto fut = oai->ChatCompletion->create_async(model, convo);
 
     // check if the future is ready
     fut.wait();

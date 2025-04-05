@@ -82,10 +82,9 @@ MainWindow::MainWindow(QWidget *parent, const whisper_params &params)
     wavWriter = new wav_writer();
 
     // Get current date/time for filename
-    time_t now = time(nullptr);
-    char buffer[80];
-    strftime(buffer, sizeof(buffer), "%Y%m%d%H%M%S", localtime(&now));
-    std::string filename = std::string(buffer) + ".wav";
+    auto now = std::chrono::system_clock::now();
+    std::string filename = std::format(
+        "{:%Y%m%d%H%M%S}.wav", std::chrono::current_zone()->to_local(now));
 
     wavWriter->open(filename, WHISPER_SAMPLE_RATE, 16, 1);
   }
@@ -124,7 +123,9 @@ void MainWindow::handleClick() {
 }
 
 auto MainWindow::running() -> int {
-  // page->scrollToBottom();
+  if (ui->check->isChecked()) {
+    page->scrollToBottom();
+  }
 
   // main audio loop
   if (params.save_audio) {
@@ -161,6 +162,7 @@ auto MainWindow::running() -> int {
 
   std::string message = model->inference(params, pcmf32);
   if (message != "") {
+    message += params.prompt;
     ui->queue->enqueueMessage(QString::fromStdString(message));
     mychat->addMessage(message, namedCallback);
   }
