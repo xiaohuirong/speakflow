@@ -112,6 +112,7 @@ auto whisper_params_parse(int argc, char **argv, whisper_params &params)
   app.add_option("--llm", params.llm, "LLM model name.");
   app.add_option("--prompt", params.prompt, "LLM additional prompt");
   app.add_option("--init-prompt", params.init_prompt, "LLM initial prompt");
+  app.add_option("--system", params.system, "system role");
 
   CLI11_PARSE(app, argc, argv);
 

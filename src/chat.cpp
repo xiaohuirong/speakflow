@@ -18,6 +18,12 @@ Chat::Chat(whisper_params &params) : stopChat(false) {
   }
 
   oai->auth.SetMaxTimeout(params.timeout);
+
+  if (params.system != "") {
+    if (!convo.SetSystemData(params.system)) {
+      std::println("set system data failed");
+    }
+  }
 }
 
 void Chat::start() { chatThread = std::thread(&Chat::processMessages, this); }
@@ -47,8 +53,12 @@ void Chat::processMessages() {
       std::unique_lock<std::mutex> lock(queueMutex);
       cv.wait(lock, [this]() { return !messageQueue.empty() || stopChat; });
 
-      if (stopChat && messageQueue.empty()) {
-        break;
+      if (stopChat) {
+        return;
+      }
+
+      if (messageQueue.empty()) {
+        continue;
       }
 
       message = messageQueue.front();
@@ -58,13 +68,13 @@ void Chat::processMessages() {
     std::cout << "Processing message: " << message.text << std::endl;
     message_count += 1;
 
-    message.callback(
-        std::format("### USER {} \n", message_count) + message.text, false);
+    message.callback(std::format("## USER {} \n", message_count) + message.text,
+                     false);
 
     if (message.callback) {
       std::string response = wait_response(message.text);
       // callback
-      message.callback(std::format("### AI {} \n", message_count) + response,
+      message.callback(std::format("## AI {} \n", message_count) + response,
                        true);
     }
   }
