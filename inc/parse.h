@@ -51,6 +51,7 @@ struct whisper_params {
   std::string llm = "gemma3:4b";
 
   std::string prompt = "";
+  std::string init_prompt = "";
 };
 
 auto whisper_params_parse(int argc, char **argv, whisper_params &params)

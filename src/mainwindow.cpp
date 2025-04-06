@@ -14,14 +14,10 @@ MainWindow::MainWindow(QWidget *parent, const whisper_params &params)
     : QMainWindow(parent), ui(new Ui::MainWindow), params(params) {
   ui->setupUi(this);
 
-  ui->editor->setFont(QFontDatabase::systemFont(QFontDatabase::FixedFont));
   ui->preview->setContextMenuPolicy(Qt::NoContextMenu);
 
-  page = new PreviewPage(this);
+  page = new PreviewPage();
   ui->preview->setPage(page);
-
-  connect(ui->editor, &QPlainTextEdit::textChanged,
-          [this]() { m_content.setText(ui->editor->toPlainText()); });
 
   connect(ui->clickButton, &QPushButton::clicked, this,
           &MainWindow::handleClick);
@@ -35,9 +31,7 @@ MainWindow::MainWindow(QWidget *parent, const whisper_params &params)
   ui->statusbar->showMessage("Whisper未启动...");
 
   namedCallback = [this](const std::string &message, bool is_response) {
-    QMetaObject::invokeMethod(ui->editor, "appendPlainText",
-                              Qt::QueuedConnection,
-                              Q_ARG(QString, QString::fromStdString(message)));
+    m_content.appendText(QString::fromStdString(message));
     if (!is_response) {
       QMetaObject::invokeMethod(ui->queue, "dequeueMessage",
                                 Qt::QueuedConnection);
@@ -89,13 +83,18 @@ MainWindow::MainWindow(QWidget *parent, const whisper_params &params)
 
   timer = new QTimer();
   connect(timer, &QTimer::timeout, this, &MainWindow::running);
+
+  mychat->start();
+  if (params.init_prompt != "") {
+    mychat->addMessage(params.init_prompt, namedCallback);
+  }
 }
 
 MainWindow::~MainWindow() {
   if (is_running) {
     audio->pause();
-    mychat->stop();
   }
+  mychat->stop();
   delete ui;
   delete model;
   delete mychat;
@@ -107,7 +106,6 @@ void MainWindow::handleClick() {
     ui->clickButton->setText("停止");
     ui->statusbar->showMessage("Whisper实时记录中...");
     audio->resume();
-    mychat->start();
     t_change = std::chrono::high_resolution_clock::now();
     timer->start(2000);
   } else {
@@ -115,7 +113,6 @@ void MainWindow::handleClick() {
     ui->clickButton->setText("启动");
     ui->statusbar->showMessage("Whisper未启动...");
     audio->pause();
-    mychat->stop();
     timer->stop();
   }
 }

@@ -18,7 +18,7 @@
     <item>
      <layout class="QVBoxLayout" name="verticalLayout">
       <item>
-       <layout class="QHBoxLayout" name="_2">
+       <layout class="QHBoxLayout" name="horizontalLayout">
         <item>
          <widget class="QPushButton" name="clickButton">
           <property name="sizePolicy">
@@ -55,12 +55,18 @@
         <property name="orientation">
          <enum>Qt::Orientation::Horizontal</enum>
         </property>
-        <widget class="QPlainTextEdit" name="editor">
+        <widget class="QueueWidget" name="queue" native="true">
          <property name="sizePolicy">
-          <sizepolicy hsizetype="Maximum" vsizetype="Preferred">
+          <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
            <horstretch>0</horstretch>
            <verstretch>0</verstretch>
           </sizepolicy>
+         </property>
+         <property name="minimumSize">
+          <size>
+           <width>200</width>
+           <height>0</height>
+          </size>
          </property>
         </widget>
         <widget class="QWebEngineView" name="preview">
@@ -74,20 +80,6 @@
           <url>
            <string>about:blank</string>
           </url>
-         </property>
-        </widget>
-        <widget class="QueueWidget" name="queue" native="true">
-         <property name="sizePolicy">
-          <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
-           <horstretch>0</horstretch>
-           <verstretch>0</verstretch>
-          </sizepolicy>
-         </property>
-         <property name="minimumSize">
-          <size>
-           <width>200</width>
-           <height>0</height>
-          </size>
          </property>
         </widget>
        </widget>

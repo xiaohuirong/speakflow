@@ -55,6 +55,7 @@ void print_whisper_params(const whisper_params &p) {
   PRINT_MEMBER(llm);
 
   PRINT_MEMBER(prompt);
+  PRINT_MEMBER(init_prompt);
 }
 
 auto whisper_params_parse(int argc, char **argv, whisper_params &params)
@@ -110,6 +111,7 @@ auto whisper_params_parse(int argc, char **argv, whisper_params &params)
   app.add_option("--timeout", params.timeout, "API request timeout(ms)");
   app.add_option("--llm", params.llm, "LLM model name.");
   app.add_option("--prompt", params.prompt, "LLM additional prompt");
+  app.add_option("--init-prompt", params.init_prompt, "LLM initial prompt");
 
   CLI11_PARSE(app, argc, argv);
 

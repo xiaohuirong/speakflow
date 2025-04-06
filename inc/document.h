@@ -11,6 +11,7 @@ public:
   explicit Document(QObject *parent = nullptr) : QObject(parent) {}
 
   void setText(const QString &text);
+  void appendText(const QString &text);
 
 signals:
   void textChanged(const QString &text);
