@@ -3,9 +3,9 @@
 
 #include "chat.h"
 #include "common-sdl.h"
-#include "common.h"
 #include "document.h"
 #include "inference.h"
+#include "monitorwindow.h"
 #include "parse.h"
 #include "previewpage.h"
 
@@ -53,6 +53,8 @@ private:
 
   function<void(const string &, bool)> chatCallback;
   function<void(const string &)> whisperCallback;
+
+  MonitorWindow *monitorwindow;
 
 private slots:
   void handleClick();

@@ -1,6 +1,7 @@
 #include "mainwindow.h"
 #include "common.h"
 #include "inference.h"
+#include "monitorwindow.h"
 #include "previewpage.h"
 #include "qpushbutton.h"
 #include "ui_mainwindow.h"
@@ -14,6 +15,11 @@
 MainWindow::MainWindow(QWidget *parent, const whisper_params &params)
     : QMainWindow(parent), ui(new Ui::MainWindow), params(params) {
   ui->setupUi(this);
+
+  monitorwindow = new MonitorWindow(this);
+
+  connect(ui->openmonitor, &QPushButton::clicked, this->monitorwindow,
+          &MonitorWindow::show);
 
   ui->preview->setContextMenuPolicy(Qt::NoContextMenu);
 

@@ -40,13 +40,13 @@ else()
 endif()
 
 find_package(SDL2 REQUIRED)
-find_package(Qt6 REQUIRED COMPONENTS Widgets WebEngineWidgets)
+find_package(Qt6 REQUIRED COMPONENTS Widgets WebEngineWidgets Multimedia)
 find_package(spdlog REQUIRED)
 
 file(GLOB SOURCES src/*.cpp res/*.qrc)
-set(UI_FILES ui/mainwindow.ui)
+set(UI_FILES ui/mainwindow.ui ui/monitorwindow.ui)
 set(MOC_HEADERS inc/mainwindow.h inc/document.h inc/previewpage.h
-                inc/messagequeue.h)
+                inc/messagequeue.h inc/qtaudio.h inc/monitorwindow.h)
 
 qt6_wrap_ui(UI_HEADERS ${UI_FILES})
 qt6_wrap_cpp(MOC_SOURCES ${MOC_HEADERS})
@@ -65,4 +65,5 @@ target_link_libraries(
           spdlog
           fmt
           Qt6::Widgets
-          Qt6::WebEngineWidgets)
+          Qt6::WebEngineWidgets
+          Qt6::Multimedia)
