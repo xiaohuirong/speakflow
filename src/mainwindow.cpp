@@ -84,17 +84,6 @@ MainWindow::MainWindow(QWidget *parent, const whisper_params &params)
     }
   }
 
-  if (params.save_audio) {
-    wavWriter = new wav_writer();
-
-    // Get current date/time for filename
-    auto now = chrono::system_clock::now();
-    string filename =
-        format("{:%Y%m%d%H%M%S}.wav", chrono::current_zone()->to_local(now));
-
-    wavWriter->open(filename, WHISPER_SAMPLE_RATE, 16, 1);
-  }
-
   timer = new QTimer();
   connect(timer, &QTimer::timeout, this, &MainWindow::running);
 
