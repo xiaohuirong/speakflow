@@ -117,11 +117,6 @@ auto MainWindow::running() -> int {
     page->scrollToBottom();
   }
 
-  // main audio loop
-  if (params.save_audio) {
-    wavWriter->write(pcmf32_new.data(), pcmf32_new.size());
-  }
-
   const auto t_now = chrono::high_resolution_clock::now();
 
   audio->get(2000, pcmf32_new);

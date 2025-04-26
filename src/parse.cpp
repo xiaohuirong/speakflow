@@ -39,14 +39,12 @@ void print_whisper_params(const whisper_params &p) {
   PRINT_MEMBER(no_context);
   PRINT_MEMBER(no_timestamps);
   PRINT_MEMBER(tinydiarize);
-  PRINT_MEMBER(save_audio);
   PRINT_MEMBER(use_gpu);
   PRINT_MEMBER(flash_attn);
   PRINT_MEMBER(use_vad);
 
   PRINT_MEMBER(language);
   PRINT_MEMBER(model);
-  PRINT_MEMBER(fname_out);
 
   PRINT_MEMBER(timeout);
 
@@ -96,8 +94,6 @@ auto whisper_params_parse(int argc, char **argv, whisper_params &params)
   app.add_option("-m,--model", params.model, "model path");
   app.add_flag("--tdrz,--tinydiarize", params.tinydiarize,
                "enable tinydiarize (requires a tdrz model)");
-  app.add_flag("--sa,--save-audio", params.save_audio,
-               "save the recorded audio to a file");
   app.add_flag("--ng,--no-gpu", params.use_gpu, "disable GPU inference")
       ->default_val(true)
       ->transform(CLI::IsMember({true, false}));

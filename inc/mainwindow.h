@@ -40,8 +40,6 @@ private:
   vector<float> pcmf32;
   vector<float> pcmf32_new;
 
-  wav_writer *wavWriter;
-
   bool is_running = false;
 
   chrono::time_point<chrono::high_resolution_clock> t_change;
