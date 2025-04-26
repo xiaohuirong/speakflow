@@ -51,7 +51,8 @@ private:
 
   PreviewPage *page;
 
-  std::function<void(const std::string &, bool)> namedCallback;
+  std::function<void(const std::string &, bool)> chatCallback;
+  std::function<void(const std::string &)> whisperCallback;
 
 private slots:
   void handleClick();

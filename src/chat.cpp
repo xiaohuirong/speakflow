@@ -6,7 +6,9 @@
 
 using namespace liboai;
 
-Chat::Chat(whisper_params &params) : stopChat(false) {
+Chat::Chat(whisper_params &params, Callback callback) : stopChat(false) {
+
+  whisper_callback = callback;
 
   oai = new OpenAI(params.url);
 
@@ -37,17 +39,17 @@ void Chat::stop() {
   chatThread.join();
 }
 
-void Chat::addMessage(const std::string &messageText, Callback callback) {
+void Chat::addMessage(const std::string &messageText) {
   {
     std::lock_guard<std::mutex> lock(queueMutex);
-    messageQueue.push({messageText, callback});
+    messageQueue.push({messageText});
   }
   cv.notify_one();
 }
 
 void Chat::processMessages() {
   while (true) {
-    Message message = {.text = "", .callback = nullptr};
+    Message message = {.text = ""};
 
     {
       std::unique_lock<std::mutex> lock(queueMutex);
@@ -68,13 +70,13 @@ void Chat::processMessages() {
     std::cout << "Processing message: " << message.text << std::endl;
     message_count += 1;
 
-    message.callback(std::format("## USER {} \n", message_count) + message.text,
+    whisper_callback(std::format("## USER {} \n", message_count) + message.text,
                      false);
 
-    if (message.callback) {
+    if (whisper_callback) {
       std::string response = wait_response(message.text);
       // callback
-      message.callback(std::format("## AI {} \n", message_count) + response,
+      whisper_callback(std::format("## AI {} \n", message_count) + response,
                        true);
     }
   }

@@ -18,18 +18,19 @@ public:
 
   struct Message {
     std::string text;
-    Callback callback;
   };
 
-  Chat(whisper_params &params);
+  Chat(whisper_params &params, Callback callback);
 
   void start();
   void stop();
-  void addMessage(const std::string &messageText, Callback callback);
+  void addMessage(const std::string &messageText);
 
 private:
   void processMessages();
   auto wait_response(const std::string input) -> std::string;
+
+  Callback whisper_callback;
 
   std::queue<Message> messageQueue; // Message queue
   std::mutex queueMutex;            // Mutex to protect the message queue

@@ -8,8 +8,11 @@
 #include <fstream>
 #include <print>
 #include <string>
+#include <vector>
 
-S2T::S2T(whisper_params &params) {
+S2T::S2T(whisper_params &params, Callback callback) : stopInference(false) {
+
+  whisper_callback = callback;
 
   cparams.use_gpu = params.use_gpu;
   cparams.flash_attn = params.flash_attn;
@@ -46,17 +49,68 @@ S2T::~S2T() {
   whisper_free(ctx);
 }
 
+void S2T::start() { processThread = std::thread(&S2T::processVoices, this); }
+
+void S2T::processVoices() {
+  while (true) {
+    Voice voice = {.voice_data = std::vector<float>(), .no_context = false};
+
+    {
+      std::unique_lock<std::mutex> lock(queueMutex);
+      cv.wait(lock, [this]() { return !voiceQueue.empty() || stopInference; });
+      std::println("pick a voice");
+
+      if (stopInference) {
+        std::println("S2T stop then return");
+        return;
+      }
+
+      if (voiceQueue.empty()) {
+        continue;
+      }
+
+      voice = voiceQueue.front();
+      voiceQueue.pop();
+    }
+
+    if (whisper_callback) {
+      if (!voice.voice_data.empty()) {
+        std::string text = inference(voice.no_context, voice.voice_data);
+        whisper_callback(text);
+      } else {
+        std::println("no voice");
+      }
+    }
+  }
+}
+
+void S2T::addVoice(bool no_context, std::vector<float> voice_data) {
+  {
+    std::lock_guard<std::mutex> lock(queueMutex);
+    voiceQueue.push({voice_data, no_context});
+  }
+  cv.notify_one();
+}
+
+void S2T::stop() {
+  {
+    std::lock_guard<std::mutex> lock(queueMutex);
+    stopInference = true;
+  }
+  cv.notify_all();
+  processThread.join();
+}
+
 static std::ofstream fout;
 
 // duration = (t_last - t_start).count()
-auto S2T::inference(whisper_params &params, std::vector<float> pcmf32)
-    -> std::string
+auto S2T::inference(bool no_context, std::vector<float> pcmf32) -> std::string
 // run the inference
 {
   std::string result;
 
-  wparams.prompt_tokens = params.no_context ? nullptr : prompt_tokens.data();
-  wparams.prompt_n_tokens = params.no_context ? 0 : prompt_tokens.size();
+  wparams.prompt_tokens = no_context ? nullptr : prompt_tokens.data();
+  wparams.prompt_n_tokens = no_context ? 0 : prompt_tokens.size();
 
   if (whisper_full(ctx, wparams, pcmf32.data(), pcmf32.size()) != 0) {
     // fprintf(stderr, "%s: failed to process audio\n", argv[0]);
@@ -74,49 +128,30 @@ auto S2T::inference(whisper_params &params, std::vector<float> pcmf32)
         result += ",";
       }
 
-      if (params.no_timestamps) {
-        std::print("{}", text);
-        fflush(stdout);
+      const int64_t t0 = whisper_full_get_segment_t0(ctx, i);
+      const int64_t t1 = whisper_full_get_segment_t1(ctx, i);
 
-        if (params.fname_out.length() > 0) {
-          fout << text;
-        }
-      } else {
-        const int64_t t0 = whisper_full_get_segment_t0(ctx, i);
-        const int64_t t1 = whisper_full_get_segment_t1(ctx, i);
+      std::string output = "[" + to_timestamp(t0, false) + " --> " +
+                           to_timestamp(t1, false) + "]  " + text;
 
-        std::string output = "[" + to_timestamp(t0, false) + " --> " +
-                             to_timestamp(t1, false) + "]  " + text;
-
-        if (whisper_full_get_segment_speaker_turn_next(ctx, i)) {
-          output += " [SPEAKER_TURN]";
-        }
-
-        output += "\n";
-
-        std::print("{}", output);
-        fflush(stdout);
-
-        if (params.fname_out.length() > 0) {
-          fout << output;
-        }
+      if (whisper_full_get_segment_speaker_turn_next(ctx, i)) {
+        output += " [SPEAKER_TURN]";
       }
+
+      output += "\n";
+
+      std::print("{}", output);
+      fflush(stdout);
     }
 
-    if (params.fname_out.length() > 0) {
-      fout << std::endl;
-    }
-
-    if (params.use_vad) {
-      std::println("");
-      std::println("### Transcription {} END", n_iter);
-    }
+    std::println("");
+    std::println("### Transcription {} END", n_iter);
   }
 
   ++n_iter;
 
   // Add tokens of the last full length segment as the prompt
-  if (!params.no_context) {
+  if (!no_context) {
     prompt_tokens.clear();
 
     const int n_segments = whisper_full_n_segments(ctx);

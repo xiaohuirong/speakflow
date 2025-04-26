@@ -30,7 +30,7 @@ MainWindow::MainWindow(QWidget *parent, const whisper_params &params)
 
   ui->statusbar->showMessage("Whisper未启动...");
 
-  namedCallback = [this](const std::string &message, bool is_response) {
+  chatCallback = [this](const std::string &message, bool is_response) {
     m_content.appendText(QString::fromStdString(message));
     if (!is_response) {
       QMetaObject::invokeMethod(ui->queue, "dequeueMessage",
@@ -54,8 +54,22 @@ MainWindow::MainWindow(QWidget *parent, const whisper_params &params)
     exit(0);
   }
 
-  model = new S2T(this->params);
-  mychat = new Chat(this->params);
+  whisperCallback = [this, params](const std::string &text) {
+    std::string keyword = "明镜与点点";
+    std::string message = text;
+    if (message != "" && message.find(keyword) == std::string::npos) {
+      message += params.prompt;
+      ui->queue->enqueueMessage(QString::fromStdString(message));
+      QMetaObject::invokeMethod(
+          ui->queue, "enqueueMessage", Qt::QueuedConnection,
+          Q_ARG(QString, QString::fromStdString(message)));
+
+      mychat->addMessage(message);
+    }
+  };
+
+  model = new S2T(this->params, whisperCallback);
+  mychat = new Chat(this->params, chatCallback);
 
   pcmf32 = std::vector<float>(params.n_samples_30s, 0.0f);
   pcmf32_new = std::vector<float>(params.n_samples_30s, 0.0f);
@@ -84,9 +98,10 @@ MainWindow::MainWindow(QWidget *parent, const whisper_params &params)
   timer = new QTimer();
   connect(timer, &QTimer::timeout, this, &MainWindow::running);
 
+  model->start();
   mychat->start();
   if (params.init_prompt != "") {
-    mychat->addMessage(params.init_prompt, namedCallback);
+    mychat->addMessage(params.init_prompt);
   }
 }
 
@@ -94,6 +109,7 @@ MainWindow::~MainWindow() {
   if (is_running) {
     audio->pause();
   }
+  model->stop();
   mychat->stop();
   delete ui;
   delete model;
@@ -155,12 +171,10 @@ auto MainWindow::running() -> int {
     }
   }
 
-  std::string message = model->inference(params, pcmf32);
-  if (message != "") {
-    message += params.prompt;
-    ui->queue->enqueueMessage(QString::fromStdString(message));
-    mychat->addMessage(message, namedCallback);
-  }
+  std::println("before add Voice");
+  model->addVoice(params.no_context, pcmf32);
+  // model->inference(params.no_context, pcmf32);
+  std::println("after add Voice");
 
   return 0;
 }
