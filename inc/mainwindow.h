@@ -14,6 +14,8 @@
 #include <QTimer>
 #include <whisper.h>
 
+using namespace std;
+
 QT_BEGIN_NAMESPACE
 namespace Ui {
 class MainWindow;
@@ -35,14 +37,14 @@ private:
   Chat *mychat;
   S2T *model;
 
-  std::vector<float> pcmf32;
-  std::vector<float> pcmf32_new;
+  vector<float> pcmf32;
+  vector<float> pcmf32_new;
 
   wav_writer *wavWriter;
 
   bool is_running = false;
 
-  std::chrono::time_point<std::chrono::high_resolution_clock> t_change;
+  chrono::time_point<chrono::high_resolution_clock> t_change;
   bool last_status = false;
 
   QTimer *timer;
@@ -51,8 +53,8 @@ private:
 
   PreviewPage *page;
 
-  std::function<void(const std::string &, bool)> chatCallback;
-  std::function<void(const std::string &)> whisperCallback;
+  function<void(const string &, bool)> chatCallback;
+  function<void(const string &)> whisperCallback;
 
 private slots:
   void handleClick();

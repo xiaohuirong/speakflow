@@ -8,6 +8,8 @@
 #include <mutex>
 #include <vector>
 
+using namespace std;
+
 //
 // SDL Audio capture
 //
@@ -29,7 +31,7 @@ public:
   void callback(uint8_t *stream, int len);
 
   // get audio data from the circular buffer
-  void get(int ms, std::vector<float> &audio);
+  void get(int ms, vector<float> &audio);
 
 private:
   SDL_AudioDeviceID m_dev_id_in = 0;
@@ -37,10 +39,10 @@ private:
   int m_len_ms = 0;
   int m_sample_rate = 0;
 
-  std::atomic_bool m_running;
-  std::mutex m_mutex;
+  atomic_bool m_running;
+  mutex m_mutex;
 
-  std::vector<float> m_audio;
+  vector<float> m_audio;
   size_t m_audio_pos = 0;
   size_t m_audio_len = 0;
 };

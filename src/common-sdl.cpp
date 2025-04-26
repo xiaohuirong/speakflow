@@ -30,10 +30,10 @@ auto audio_async::init(int capture_id, int sample_rate, SDL_bool is_microphone)
 
   {
     int nDevices = SDL_GetNumAudioDevices(is_microphone);
-    std::println(stderr, "{}: found {} capture devices:", __func__, nDevices);
+    println(stderr, "{}: found {} capture devices:", __func__, nDevices);
     for (int i = 0; i < nDevices; i++) {
-      std::println(stderr, "{}:    - Capture device #{}: '{}'", __func__, i,
-                   SDL_GetAudioDeviceName(i, is_microphone));
+      println(stderr, "{}:    - Capture device #{}: '{}'", __func__, i,
+              SDL_GetAudioDeviceName(i, is_microphone));
     }
   }
 
@@ -55,40 +55,37 @@ auto audio_async::init(int capture_id, int sample_rate, SDL_bool is_microphone)
   capture_spec_requested.userdata = this;
 
   if (capture_id >= 0) {
-    std::println(stderr, "{}: attempt to open capture device {} : '{}' ...",
-                 __func__, capture_id,
-                 SDL_GetAudioDeviceName(capture_id, is_microphone));
+    println(stderr, "{}: attempt to open capture device {} : '{}' ...",
+            __func__, capture_id,
+            SDL_GetAudioDeviceName(capture_id, is_microphone));
     m_dev_id_in = SDL_OpenAudioDevice(
         SDL_GetAudioDeviceName(capture_id, is_microphone), is_microphone,
         &capture_spec_requested, &capture_spec_obtained, 0);
   } else {
-    std::println(stderr, "{}: attempt to open default capture device ...",
-                 __func__);
+    println(stderr, "{}: attempt to open default capture device ...", __func__);
     m_dev_id_in =
         SDL_OpenAudioDevice(nullptr, is_microphone, &capture_spec_requested,
                             &capture_spec_obtained, 0);
   }
 
   if (!m_dev_id_in) {
-    std::println(stderr, "{}: couldn't open an audio device for capture: {}!",
-                 __func__, SDL_GetError());
+    println(stderr, "{}: couldn't open an audio device for capture: {}!",
+            __func__, SDL_GetError());
     m_dev_id_in = 0;
 
     return false;
   } else {
-    std::println(stderr,
-                 "{}: obtained spec for input device (SDL Id = {}):", __func__,
-                 m_dev_id_in);
-    std::println(stderr, "{}:     - sample rate:       {}", __func__,
-                 capture_spec_obtained.freq);
-    std::println(stderr, "{}:     - format:            {} (required: {})",
-                 __func__, capture_spec_obtained.format,
-                 capture_spec_requested.format);
-    std::println(stderr, "{}:     - channels:          {} (required: {})",
-                 __func__, capture_spec_obtained.channels,
-                 capture_spec_requested.channels);
-    std::println(stderr, "{}:     - samples per frame: {}", __func__,
-                 capture_spec_obtained.samples);
+    println(stderr,
+            "{}: obtained spec for input device (SDL Id = {}):", __func__,
+            m_dev_id_in);
+    println(stderr, "{}:     - sample rate:       {}", __func__,
+            capture_spec_obtained.freq);
+    println(stderr, "{}:     - format:            {} (required: {})", __func__,
+            capture_spec_obtained.format, capture_spec_requested.format);
+    println(stderr, "{}:     - channels:          {} (required: {})", __func__,
+            capture_spec_obtained.channels, capture_spec_requested.channels);
+    println(stderr, "{}:     - samples per frame: {}", __func__,
+            capture_spec_obtained.samples);
   }
 
   m_sample_rate = capture_spec_obtained.freq;
@@ -100,12 +97,12 @@ auto audio_async::init(int capture_id, int sample_rate, SDL_bool is_microphone)
 
 auto audio_async::resume() -> bool {
   if (!m_dev_id_in) {
-    std::println(stderr, "{}: no audio device to resume!", __func__);
+    println(stderr, "{}: no audio device to resume!", __func__);
     return false;
   }
 
   if (m_running) {
-    std::println(stderr, "{}: already running!", __func__);
+    println(stderr, "{}: already running!", __func__);
     return false;
   }
 
@@ -118,12 +115,12 @@ auto audio_async::resume() -> bool {
 
 auto audio_async::pause() -> bool {
   if (!m_dev_id_in) {
-    std::println(stderr, "{}: no audio device to pause!", __func__);
+    println(stderr, "{}: no audio device to pause!", __func__);
     return false;
   }
 
   if (!m_running) {
-    std::println(stderr, "{}: already paused!", __func__);
+    println(stderr, "{}: already paused!", __func__);
     return false;
   }
 
@@ -136,17 +133,17 @@ auto audio_async::pause() -> bool {
 
 auto audio_async::clear() -> bool {
   if (!m_dev_id_in) {
-    std::println(stderr, "{}: no audio device to clear!", __func__);
+    println(stderr, "{}: no audio device to clear!", __func__);
     return false;
   }
 
   if (!m_running) {
-    std::println(stderr, "{}: not running!", __func__);
+    println(stderr, "{}: not running!", __func__);
     return false;
   }
 
   {
-    std::lock_guard<std::mutex> lock(m_mutex);
+    lock_guard<mutex> lock(m_mutex);
 
     m_audio_pos = 0;
     m_audio_len = 0;
@@ -173,7 +170,7 @@ void audio_async::callback(uint8_t *stream, int len) {
   // m_audio_pos, m_audio_len);
 
   {
-    std::lock_guard<std::mutex> lock(m_mutex);
+    lock_guard<mutex> lock(m_mutex);
 
     if (m_audio_pos + n_samples > m_audio.size()) {
       const size_t n0 = m_audio.size() - m_audio_pos;
@@ -185,25 +182,25 @@ void audio_async::callback(uint8_t *stream, int len) {
       memcpy(&m_audio[m_audio_pos], stream, n_samples * sizeof(float));
     }
     m_audio_pos = (m_audio_pos + n_samples) % m_audio.size();
-    m_audio_len = std::min(m_audio_len + n_samples, m_audio.size());
+    m_audio_len = min(m_audio_len + n_samples, m_audio.size());
   }
 }
 
-void audio_async::get(int ms, std::vector<float> &result) {
+void audio_async::get(int ms, vector<float> &result) {
   if (!m_dev_id_in) {
-    std::println(stderr, "{}: no audio device to get audio from!", __func__);
+    println(stderr, "{}: no audio device to get audio from!", __func__);
     return;
   }
 
   if (!m_running) {
-    std::println(stderr, "{}: not running!", __func__);
+    println(stderr, "{}: not running!", __func__);
     return;
   }
 
   result.clear();
 
   {
-    std::lock_guard<std::mutex> lock(m_mutex);
+    lock_guard<mutex> lock(m_mutex);
 
     if (ms <= 0) {
       ms = m_len_ms;

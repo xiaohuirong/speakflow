@@ -4,8 +4,6 @@
 #include <print>
 #include <thread>
 
-using namespace liboai;
-
 Chat::Chat(whisper_params &params, Callback callback) : stopChat(false) {
 
   whisper_callback = callback;
@@ -16,32 +14,32 @@ Chat::Chat(whisper_params &params, Callback callback) : stopChat(false) {
   model = params.llm;
 
   if (!oai->auth.SetKey(key)) {
-    std::println("auth failed!");
+    println("auth failed!");
   }
 
   oai->auth.SetMaxTimeout(params.timeout);
 
   if (params.system != "") {
     if (!convo.SetSystemData(params.system)) {
-      std::println("set system data failed");
+      println("set system data failed");
     }
   }
 }
 
-void Chat::start() { chatThread = std::thread(&Chat::processMessages, this); }
+void Chat::start() { chatThread = thread(&Chat::processMessages, this); }
 
 void Chat::stop() {
   {
-    std::lock_guard<std::mutex> lock(queueMutex);
+    lock_guard<mutex> lock(queueMutex);
     stopChat = true;
   }
   cv.notify_all();
   chatThread.join();
 }
 
-void Chat::addMessage(const std::string &messageText) {
+void Chat::addMessage(const string &messageText) {
   {
-    std::lock_guard<std::mutex> lock(queueMutex);
+    lock_guard<mutex> lock(queueMutex);
     messageQueue.push({messageText});
   }
   cv.notify_one();
@@ -52,7 +50,7 @@ void Chat::processMessages() {
     Message message = {.text = ""};
 
     {
-      std::unique_lock<std::mutex> lock(queueMutex);
+      unique_lock<mutex> lock(queueMutex);
       cv.wait(lock, [this]() { return !messageQueue.empty() || stopChat; });
 
       if (stopChat) {
@@ -67,22 +65,21 @@ void Chat::processMessages() {
       messageQueue.pop();
     }
 
-    std::cout << "Processing message: " << message.text << std::endl;
+    cout << "Processing message: " << message.text << endl;
     message_count += 1;
 
-    whisper_callback(std::format("## USER {} \n", message_count) + message.text,
+    whisper_callback(format("## USER {} \n", message_count) + message.text,
                      false);
 
     if (whisper_callback) {
-      std::string response = wait_response(message.text);
+      string response = wait_response(message.text);
       // callback
-      whisper_callback(std::format("## AI {} \n", message_count) + response,
-                       true);
+      whisper_callback(format("## AI {} \n", message_count) + response, true);
     }
   }
 }
 
-auto Chat::wait_response(const std::string input) -> std::string {
+auto Chat::wait_response(const string input) -> string {
   // add a message to the conversation
   if (!convo.AddUserData(input)) {
     return "This is a error: add a message failed";
@@ -99,16 +96,16 @@ auto Chat::wait_response(const std::string input) -> std::string {
 
     // update our conversation with the response
     if (!convo.Update(response)) {
-      std::println("update conversation failed");
+      println("update conversation failed");
       return "This is a error: update conversation failed";
     }
 
     // print the response
-    std::cout << convo.GetLastResponse() << std::endl;
+    cout << convo.GetLastResponse() << endl;
 
     return convo.GetLastResponse();
   } catch (std::exception &e) {
-    std::cout << e.what() << std::endl;
+    cout << e.what() << endl;
     return "This is a error: try fail";
   }
 }

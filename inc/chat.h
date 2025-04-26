@@ -11,37 +11,38 @@
 #include <thread>
 
 using namespace liboai;
+using namespace std;
 
 class Chat {
 public:
-  using Callback = std::function<void(const std::string &, bool)>;
+  using Callback = function<void(const string &, bool)>;
 
   struct Message {
-    std::string text;
+    string text;
   };
 
   Chat(whisper_params &params, Callback callback);
 
   void start();
   void stop();
-  void addMessage(const std::string &messageText);
+  void addMessage(const string &messageText);
 
 private:
   void processMessages();
-  auto wait_response(const std::string input) -> std::string;
+  auto wait_response(const string input) -> string;
 
   Callback whisper_callback;
 
-  std::queue<Message> messageQueue; // Message queue
-  std::mutex queueMutex;            // Mutex to protect the message queue
-  std::condition_variable cv; // Condition variable for thread synchronization
-  bool stopChat;              // Whether to stop the chat system
-  std::thread chatThread;     // Chat system thread
+  queue<Message> messageQueue; // Message queue
+  mutex queueMutex;            // Mutex to protect the message queue
+  condition_variable cv;       // Condition variable for thread synchronization
+  bool stopChat;               // Whether to stop the chat system
+  thread chatThread;           // Chat system thread
 
   OpenAI *oai;
   Conversation convo;
-  std::string key;
+  string key;
   int message_count = 0;
 
-  std::string model;
+  string model;
 };

@@ -15,12 +15,12 @@
 #endif
 
 // Function to check if the next argument exists
-static auto get_next_arg(int &i, int argc, char **argv, const std::string &flag,
-                         gpt_params &params) -> std::string {
+static auto get_next_arg(int &i, int argc, char **argv, const string &flag,
+                         gpt_params &params) -> string {
   if (i + 1 < argc && argv[i + 1][0] != '-') {
     return argv[++i];
   } else {
-    std::println(stderr, "error: {} requires one argument.", flag);
+    println(stderr, "error: {} requires one argument.", flag);
     gpt_print_usage(argc, argv, params);
     exit(0);
   }
@@ -28,37 +28,35 @@ static auto get_next_arg(int &i, int argc, char **argv, const std::string &flag,
 
 auto gpt_params_parse(int argc, char **argv, gpt_params &params) -> bool {
   for (int i = 1; i < argc; i++) {
-    std::string arg = argv[i];
+    string arg = argv[i];
 
     if (arg == "-s" || arg == "--seed") {
-      params.seed = std::stoi(get_next_arg(i, argc, argv, arg, params));
+      params.seed = stoi(get_next_arg(i, argc, argv, arg, params));
     } else if (arg == "-t" || arg == "--threads") {
-      params.n_threads = std::stoi(get_next_arg(i, argc, argv, arg, params));
+      params.n_threads = stoi(get_next_arg(i, argc, argv, arg, params));
     } else if (arg == "-p" || arg == "--prompt") {
       params.prompt = get_next_arg(i, argc, argv, arg, params);
     } else if (arg == "-n" || arg == "--n_predict") {
-      params.n_predict = std::stoi(get_next_arg(i, argc, argv, arg, params));
+      params.n_predict = stoi(get_next_arg(i, argc, argv, arg, params));
     } else if (arg == "-np" || arg == "--n_parallel") {
-      params.n_parallel = std::stoi(get_next_arg(i, argc, argv, arg, params));
+      params.n_parallel = stoi(get_next_arg(i, argc, argv, arg, params));
     } else if (arg == "--top_k") {
-      params.top_k = std::stoi(get_next_arg(i, argc, argv, arg, params));
+      params.top_k = stoi(get_next_arg(i, argc, argv, arg, params));
     } else if (arg == "--top_p") {
-      params.top_p = std::stof(get_next_arg(i, argc, argv, arg, params));
+      params.top_p = stof(get_next_arg(i, argc, argv, arg, params));
     } else if (arg == "--temp") {
-      params.temp = std::stof(get_next_arg(i, argc, argv, arg, params));
+      params.temp = stof(get_next_arg(i, argc, argv, arg, params));
     } else if (arg == "--repeat-last-n") {
-      params.repeat_last_n =
-          std::stoi(get_next_arg(i, argc, argv, arg, params));
+      params.repeat_last_n = stoi(get_next_arg(i, argc, argv, arg, params));
     } else if (arg == "--repeat-penalty") {
-      params.repeat_penalty =
-          std::stof(get_next_arg(i, argc, argv, arg, params));
+      params.repeat_penalty = stof(get_next_arg(i, argc, argv, arg, params));
     } else if (arg == "-b" || arg == "--batch_size") {
-      params.n_batch = std::stoi(get_next_arg(i, argc, argv, arg, params));
+      params.n_batch = stoi(get_next_arg(i, argc, argv, arg, params));
     } else if (arg == "-c" || arg == "--context") {
-      params.n_ctx = std::stoi(get_next_arg(i, argc, argv, arg, params));
+      params.n_ctx = stoi(get_next_arg(i, argc, argv, arg, params));
     } else if (arg == "-ngl" || arg == "--gpu-layers" ||
                arg == "--n-gpu-layers") {
-      params.n_gpu_layers = std::stoi(get_next_arg(i, argc, argv, arg, params));
+      params.n_gpu_layers = stoi(get_next_arg(i, argc, argv, arg, params));
     } else if (arg == "--ignore-eos") {
       params.ignore_eos = true;
     } else if (arg == "-m" || arg == "--model") {
@@ -67,27 +65,26 @@ auto gpt_params_parse(int argc, char **argv, gpt_params &params) -> bool {
       params.interactive = true;
     } else if (arg == "-ip" || arg == "--interactive-port") {
       params.interactive = true;
-      params.interactive_port =
-          std::stoi(get_next_arg(i, argc, argv, arg, params));
+      params.interactive_port = stoi(get_next_arg(i, argc, argv, arg, params));
     } else if (arg == "-h" || arg == "--help") {
       gpt_print_usage(argc, argv, params);
       exit(0);
     } else if (arg == "-f" || arg == "--file") {
       get_next_arg(i, argc, argv, arg, params);
-      std::ifstream file(argv[i]);
+      ifstream file(argv[i]);
       if (!file) {
-        std::println(stderr, "error: failed to open file '{}'", argv[i]);
+        println(stderr, "error: failed to open file '{}'", argv[i]);
         break;
       }
-      std::copy(std::istreambuf_iterator<char>(file),
-                std::istreambuf_iterator<char>(), back_inserter(params.prompt));
+      copy(istreambuf_iterator<char>(file), istreambuf_iterator<char>(),
+           back_inserter(params.prompt));
       if (params.prompt.back() == '\n') {
         params.prompt.pop_back();
       }
     } else if (arg == "-tt" || arg == "--token_test") {
       params.token_test = get_next_arg(i, argc, argv, arg, params);
     } else {
-      std::println(stderr, "error: unknown argument: {}", arg);
+      println(stderr, "error: unknown argument: {}", arg);
       gpt_print_usage(argc, argv, params);
       exit(0);
     }
@@ -97,62 +94,58 @@ auto gpt_params_parse(int argc, char **argv, gpt_params &params) -> bool {
 }
 
 void gpt_print_usage(int /*argc*/, char **argv, const gpt_params &params) {
-  std::println(stderr, "usage: {} [options]", argv[0]);
-  std::println(stderr, "");
-  std::println(stderr, "options:");
-  std::println(stderr,
-               "  -h, --help            show this help message and exit");
-  std::println(stderr, "  -s SEED, --seed SEED  RNG seed (default: -1)");
-  std::println(stderr,
-               "  -t N, --threads N     number of threads to use during "
-               "computation (default: {})",
-               params.n_threads);
-  std::println(stderr, "  -p PROMPT, --prompt PROMPT");
-  std::println(stderr, "                        prompt to start generation "
-                       "with (default: random)");
-  std::println(stderr, "  -f FNAME, --file FNAME");
-  std::println(stderr, "                        load prompt from a file");
-  std::println(stderr, "  -tt TOKEN_TEST, --token_test TOKEN_TEST");
-  std::println(stderr, "                        test tokenization");
-  std::println(
-      stderr,
-      "  -n N, --n_predict N   number of tokens to predict (default: {})",
-      params.n_predict);
-  std::println(stderr, "  --top_k N             top-k sampling (default: {})",
-               params.top_k);
-  std::println(stderr,
-               "  --top_p N             top-p sampling (default: {:.1f})",
-               params.top_p);
-  std::println(stderr, "  --temp N              temperature (default: {:.1f})",
-               params.temp);
-  std::println(stderr,
-               "  --repeat-last-n N     last n tokens to consider for penalize "
-               "(default: {}, 0 = disabled)",
-               params.repeat_last_n);
-  std::println(stderr,
-               "  --repeat-penalty N    penalize repeat sequence of tokens "
-               "(default: {:.2f}, 1.0 = disabled)",
-               (double)params.repeat_penalty);
-  std::println(
+  println(stderr, "usage: {} [options]", argv[0]);
+  println(stderr, "");
+  println(stderr, "options:");
+  println(stderr, "  -h, --help            show this help message and exit");
+  println(stderr, "  -s SEED, --seed SEED  RNG seed (default: -1)");
+  println(stderr,
+          "  -t N, --threads N     number of threads to use during "
+          "computation (default: {})",
+          params.n_threads);
+  println(stderr, "  -p PROMPT, --prompt PROMPT");
+  println(stderr, "                        prompt to start generation "
+                  "with (default: random)");
+  println(stderr, "  -f FNAME, --file FNAME");
+  println(stderr, "                        load prompt from a file");
+  println(stderr, "  -tt TOKEN_TEST, --token_test TOKEN_TEST");
+  println(stderr, "                        test tokenization");
+  println(stderr,
+          "  -n N, --n_predict N   number of tokens to predict (default: {})",
+          params.n_predict);
+  println(stderr, "  --top_k N             top-k sampling (default: {})",
+          params.top_k);
+  println(stderr, "  --top_p N             top-p sampling (default: {:.1f})",
+          params.top_p);
+  println(stderr, "  --temp N              temperature (default: {:.1f})",
+          params.temp);
+  println(stderr,
+          "  --repeat-last-n N     last n tokens to consider for penalize "
+          "(default: {}, 0 = disabled)",
+          params.repeat_last_n);
+  println(stderr,
+          "  --repeat-penalty N    penalize repeat sequence of tokens "
+          "(default: {:.2f}, 1.0 = disabled)",
+          (double)params.repeat_penalty);
+  println(
       stderr,
       "  -b N, --batch_size N  batch size for prompt processing (default: {})",
       params.n_batch);
-  std::println(stderr,
-               "  -c N, --context N     context / KV cache size (default: {})",
-               params.n_ctx);
-  std::println(stderr,
-               "  --ignore-eos          ignore EOS token during generation");
-  std::println(stderr,
-               "  -ngl N, --gpu-layers N  number of layers to offload to GPU "
-               "on supported models (default: {})",
-               params.n_gpu_layers);
-  std::println(stderr, "  -m FNAME, --model FNAME");
-  std::println(stderr, "                        model path (default: {})",
-               params.model);
-  std::println(stderr, "");
+  println(stderr,
+          "  -c N, --context N     context / KV cache size (default: {})",
+          params.n_ctx);
+  println(stderr, "  --ignore-eos          ignore EOS token during generation");
+  println(stderr,
+          "  -ngl N, --gpu-layers N  number of layers to offload to GPU "
+          "on supported models (default: {})",
+          params.n_gpu_layers);
+  println(stderr, "  -m FNAME, --model FNAME");
+  println(stderr, "                        model path (default: {})",
+          params.model);
+  println(stderr, "");
 }
 
-auto gpt_random_prompt(std::mt19937 &rng) -> std::string {
+auto gpt_random_prompt(mt19937 &rng) -> string {
   const int r = rng() % 10;
   switch (r) {
   case 0:
@@ -180,40 +173,39 @@ auto gpt_random_prompt(std::mt19937 &rng) -> std::string {
   return "The";
 }
 
-auto trim(const std::string &s) -> std::string {
-  std::regex e("^\\s+|\\s+$");
-  return std::regex_replace(s, e, "");
+auto trim(const string &s) -> string {
+  regex e("^\\s+|\\s+$");
+  return regex_replace(s, e, "");
 }
 
-auto replace(const std::string &s, const std::string &from,
-             const std::string &to) -> std::string {
-  std::string result = s;
+auto replace(const string &s, const string &from, const string &to) -> string {
+  string result = s;
   size_t pos = 0;
-  while ((pos = result.find(from, pos)) != std::string::npos) {
+  while ((pos = result.find(from, pos)) != string::npos) {
     result.replace(pos, from.length(), to);
     pos += to.length();
   }
   return result;
 }
 
-void gpt_vocab::add_special_token(const std::string &token) {
+void gpt_vocab::add_special_token(const string &token) {
   special_tokens.push_back(token);
 }
 
-auto json_parse(const std::string &fname) -> std::map<std::string, int32_t> {
-  std::map<std::string, int32_t> result;
+auto json_parse(const string &fname) -> map<string, int32_t> {
+  map<string, int32_t> result;
 
   // read file into string
-  std::string json;
+  string json;
   {
-    std::ifstream ifs(fname);
+    ifstream ifs(fname);
     if (!ifs) {
-      std::println(stderr, "Failed to open {}", fname);
+      println(stderr, "Failed to open {}", fname);
       exit(1);
     }
 
-    json = std::string((std::istreambuf_iterator<char>(ifs)),
-                       (std::istreambuf_iterator<char>()));
+    json =
+        string((istreambuf_iterator<char>(ifs)), (istreambuf_iterator<char>()));
   }
 
   if (json[0] != '{') {
@@ -225,8 +217,8 @@ auto json_parse(const std::string &fname) -> std::map<std::string, int32_t> {
     bool has_key = false;
     bool in_token = false;
 
-    std::string str_key = "";
-    std::string str_val = "";
+    string str_key = "";
+    string str_val = "";
 
     int n = json.size();
     for (int i = 1; i < n; ++i) {
@@ -272,7 +264,7 @@ auto json_parse(const std::string &fname) -> std::map<std::string, int32_t> {
           str_key = ::replace(str_key, "\\\"", "\"");    // \\\"   -> "
 
           try {
-            result[str_key] = std::stoi(str_val);
+            result[str_key] = stoi(str_val);
           } catch (...) {
             // fprintf(stderr, "%s: ignoring key '%s' with value '%s'\n",
             // fname.c_str(), str_key.c_str(), str_val.c_str());
@@ -294,13 +286,13 @@ auto json_parse(const std::string &fname) -> std::map<std::string, int32_t> {
   return result;
 }
 
-void gpt_split_words(std::string str, std::vector<std::string> &words) {
-  const std::string pattern =
+void gpt_split_words(string str, vector<string> &words) {
+  const string pattern =
       R"('s|'t|'re|'ve|'m|'ll|'d| ?[[:alpha:]]+| ?[[:digit:]]+| ?[^\s[:alpha:][:digit:]]+|\s+(?!\S)|\s+)";
-  const std::regex re(pattern);
-  std::smatch m;
+  const regex re(pattern);
+  smatch m;
 
-  while (std::regex_search(str, m, re)) {
+  while (regex_search(str, m, re)) {
     for (auto x : m) {
       words.push_back(x);
     }
@@ -308,30 +300,29 @@ void gpt_split_words(std::string str, std::vector<std::string> &words) {
   }
 }
 
-auto gpt_tokenize(const gpt_vocab &vocab, const std::string &text)
-    -> std::vector<gpt_vocab::id> {
-  std::vector<std::string> words;
+auto gpt_tokenize(const gpt_vocab &vocab, const string &text)
+    -> vector<gpt_vocab::id> {
+  vector<string> words;
 
   // first split the text into words
   {
-    std::string str = text;
+    string str = text;
 
     // Generate the subpattern from the special_tokens vector if it's not empty
     if (!vocab.special_tokens.empty()) {
-      const std::regex escape(R"([\[\\\^\$\.\|\?\*\+\(\)\{\}])");
-      std::string special_tokens_subpattern;
+      const regex escape(R"([\[\\\^\$\.\|\?\*\+\(\)\{\}])");
+      string special_tokens_subpattern;
       for (const auto &token : vocab.special_tokens) {
         if (!special_tokens_subpattern.empty()) {
           special_tokens_subpattern += "|";
         }
-        special_tokens_subpattern +=
-            std::regex_replace(token, escape, R"(\$&)");
+        special_tokens_subpattern += regex_replace(token, escape, R"(\$&)");
       }
 
-      std::regex re(special_tokens_subpattern);
-      std::smatch m;
+      regex re(special_tokens_subpattern);
+      smatch m;
       // Split the text by special tokens.
-      while (std::regex_search(str, m, re)) {
+      while (regex_search(str, m, re)) {
         // Split the substrings in-between special tokens into words.
         gpt_split_words(m.prefix(), words);
         // Add matched special tokens as words.
@@ -347,7 +338,7 @@ auto gpt_tokenize(const gpt_vocab &vocab, const std::string &text)
   }
 
   // find the longest token that forms each word in words:
-  std::vector<gpt_vocab::id> tokens;
+  vector<gpt_vocab::id> tokens;
   for (const auto &word : words) {
     for (int i = 0; i < (int)word.size();) {
       for (int j = word.size() - 1; j >= i; j--) {
@@ -358,8 +349,8 @@ auto gpt_tokenize(const gpt_vocab &vocab, const std::string &text)
           i = j + 1;
           break;
         } else if (j == i) { // word.substr(i, 1) has no matching
-          std::println(stderr, "{}: unknown token '{}'", __func__,
-                       word.substr(i, 1));
+          println(stderr, "{}: unknown token '{}'", __func__,
+                  word.substr(i, 1));
           i++;
         }
       }
@@ -369,76 +360,76 @@ auto gpt_tokenize(const gpt_vocab &vocab, const std::string &text)
   return tokens;
 }
 
-static auto parse_tokens_from_string(const std::string &input, char delimiter)
-    -> std::vector<gpt_vocab::id> {
-  std::vector<gpt_vocab::id> output;
-  std::stringstream ss(input);
-  std::string token;
+static auto parse_tokens_from_string(const string &input, char delimiter)
+    -> vector<gpt_vocab::id> {
+  vector<gpt_vocab::id> output;
+  stringstream ss(input);
+  string token;
 
-  while (std::getline(ss, token, delimiter)) {
-    output.push_back(std::stoi(token));
+  while (getline(ss, token, delimiter)) {
+    output.push_back(stoi(token));
   }
 
   return output;
 }
 
-static auto extract_tests_from_file(const std::string &fpath_test)
-    -> std::map<std::string, std::vector<gpt_vocab::id>> {
+static auto extract_tests_from_file(const string &fpath_test)
+    -> map<string, vector<gpt_vocab::id>> {
   if (fpath_test.empty()) {
-    std::println(stderr, "{} : No test file found.", __func__);
+    println(stderr, "{} : No test file found.", __func__);
     return {};
   }
 
-  std::map<std::string, std::vector<gpt_vocab::id>> tests;
+  map<string, vector<gpt_vocab::id>> tests;
 
-  auto fin = std::ifstream(fpath_test, std::ios_base::in);
+  auto fin = ifstream(fpath_test, ios_base::in);
   const char *delimeter = " => ";
   const char del_tok = ',';
-  std::string line;
-  while (std::getline(fin, line)) {
+  string line;
+  while (getline(fin, line)) {
     size_t delimiterPos = line.find(delimeter);
-    if (delimiterPos != std::string::npos) {
-      std::string text = line.substr(0, delimiterPos);
-      std::string s_tokens = line.substr(delimiterPos + std::strlen(delimeter));
+    if (delimiterPos != string::npos) {
+      string text = line.substr(0, delimiterPos);
+      string s_tokens = line.substr(delimiterPos + strlen(delimeter));
       tests[text] = parse_tokens_from_string(s_tokens, del_tok);
     }
   }
   return tests;
 }
 
-void test_gpt_tokenizer(gpt_vocab &vocab, const std::string &fpath_test) {
-  std::map<std::string, std::vector<gpt_vocab::id>> tests =
+void test_gpt_tokenizer(gpt_vocab &vocab, const string &fpath_test) {
+  map<string, vector<gpt_vocab::id>> tests =
       extract_tests_from_file(fpath_test);
 
   size_t n_fails = 0;
 
   for (const auto &test : tests) {
-    std::vector<gpt_vocab::id> tokens = gpt_tokenize(vocab, test.first);
+    vector<gpt_vocab::id> tokens = gpt_tokenize(vocab, test.first);
 
     if (tokens != test.second) {
       n_fails++;
 
       // print out failure cases
-      std::println(stderr, "{} : failed test: '{}'", __func__, test.first);
-      std::print(stderr, "{} : tokens in hf:   ", __func__);
+      println(stderr, "{} : failed test: '{}'", __func__, test.first);
+      print(stderr, "{} : tokens in hf:   ", __func__);
       for (const auto &t : test.second) {
-        std::print(stderr, "{}({}), ", vocab.id_to_token[t], t);
+        print(stderr, "{}({}), ", vocab.id_to_token[t], t);
       }
-      std::println(stderr, "");
-      std::print(stderr, "{} : tokens in ggml: ", __func__);
+      println(stderr, "");
+      print(stderr, "{} : tokens in ggml: ", __func__);
       for (const auto &t : tokens) {
-        std::print(stderr, "{}({}), ", vocab.id_to_token[t], t);
+        print(stderr, "{}({}), ", vocab.id_to_token[t], t);
       }
-      std::println(stderr, "");
+      println(stderr, "");
     }
   }
 
-  std::println(stderr, "{} : {} tests failed out of {} tests.", __func__,
-               n_fails, tests.size());
+  println(stderr, "{} : {} tests failed out of {} tests.", __func__, n_fails,
+          tests.size());
 }
 
-auto gpt_vocab_init(const std::string &fname, gpt_vocab &vocab) -> bool {
-  std::println("{}: loading vocab from '{}'", __func__, fname);
+auto gpt_vocab_init(const string &fname, gpt_vocab &vocab) -> bool {
+  println("{}: loading vocab from '{}'", __func__, fname);
 
   vocab.token_to_id = ::json_parse(fname);
 
@@ -446,7 +437,7 @@ auto gpt_vocab_init(const std::string &fname, gpt_vocab &vocab) -> bool {
     vocab.id_to_token[kv.second] = kv.first;
   }
 
-  std::println("{}: vocab size = {}", __func__, (int)vocab.token_to_id.size());
+  println("{}: vocab size = {}", __func__, (int)vocab.token_to_id.size());
 
   // print the vocabulary
   // for (auto kv : vocab.token_to_id) {
@@ -457,11 +448,11 @@ auto gpt_vocab_init(const std::string &fname, gpt_vocab &vocab) -> bool {
 }
 
 auto gpt_sample_top_k_top_p(const gpt_vocab &vocab, const float *logits,
-                            int top_k, double top_p, double temp,
-                            std::mt19937 &rng) -> gpt_vocab::id {
+                            int top_k, double top_p, double temp, mt19937 &rng)
+    -> gpt_vocab::id {
   int n_logits = vocab.id_to_token.size();
 
-  std::vector<std::pair<double, gpt_vocab::id>> logits_id;
+  vector<pair<double, gpt_vocab::id>> logits_id;
   logits_id.reserve(n_logits);
 
   {
@@ -472,22 +463,20 @@ auto gpt_sample_top_k_top_p(const gpt_vocab &vocab, const float *logits,
   }
 
   // find the top K tokens
-  std::partial_sort(logits_id.begin(), logits_id.begin() + top_k,
-                    logits_id.end(),
-                    [](const std::pair<double, gpt_vocab::id> &a,
-                       const std::pair<double, gpt_vocab::id> &b) {
-                      return a.first > b.first;
-                    });
+  partial_sort(
+      logits_id.begin(), logits_id.begin() + top_k, logits_id.end(),
+      [](const pair<double, gpt_vocab::id> &a,
+         const pair<double, gpt_vocab::id> &b) { return a.first > b.first; });
 
   logits_id.resize(top_k);
 
   double maxl = -INFINITY;
   for (const auto &kv : logits_id) {
-    maxl = std::max(maxl, kv.first);
+    maxl = max(maxl, kv.first);
   }
 
   // compute probs for the top K tokens
-  std::vector<double> probs;
+  vector<double> probs;
   probs.reserve(logits_id.size());
 
   double sum = 0.0;
@@ -527,7 +516,7 @@ auto gpt_sample_top_k_top_p(const gpt_vocab &vocab, const float *logits,
   // }
   // exit(0);
 
-  std::discrete_distribution<> dist(probs.begin(), probs.end());
+  discrete_distribution<> dist(probs.begin(), probs.end());
   int idx = dist(rng);
 
   return logits_id[idx].second;
@@ -537,14 +526,14 @@ auto gpt_sample_top_k_top_p_repeat(const gpt_vocab &vocab, const float *logits,
                                    const int32_t *last_n_tokens_data,
                                    size_t last_n_tokens_data_size, int top_k,
                                    double top_p, double temp, int repeat_last_n,
-                                   float repeat_penalty, std::mt19937 &rng)
+                                   float repeat_penalty, mt19937 &rng)
     -> gpt_vocab::id {
 
   int n_logits = vocab.id_to_token.size();
 
   const auto *plogits = logits;
 
-  const auto last_n_tokens = std::vector<int32_t>(
+  const auto last_n_tokens = vector<int32_t>(
       last_n_tokens_data, last_n_tokens_data + last_n_tokens_data_size);
 
   if (temp <= 0) {
@@ -561,7 +550,7 @@ auto gpt_sample_top_k_top_p_repeat(const gpt_vocab &vocab, const float *logits,
     return max_id;
   }
 
-  std::vector<std::pair<double, gpt_vocab::id>> logits_id;
+  vector<pair<double, gpt_vocab::id>> logits_id;
   logits_id.reserve(n_logits);
 
   {
@@ -571,8 +560,8 @@ auto gpt_sample_top_k_top_p_repeat(const gpt_vocab &vocab, const float *logits,
       // credit
       // https://github.com/facebookresearch/llama/compare/main...shawwn:llama:main
       if (repeat_last_n > 0 &&
-          std::find(last_n_tokens.end() - repeat_last_n, last_n_tokens.end(),
-                    i) != last_n_tokens.end()) {
+          find(last_n_tokens.end() - repeat_last_n, last_n_tokens.end(), i) !=
+              last_n_tokens.end()) {
         // if score < 0 then repetition penalty has to multiplied to reduce the
         // previous token probability
         if (plogits[i] < 0.0f) {
@@ -587,22 +576,20 @@ auto gpt_sample_top_k_top_p_repeat(const gpt_vocab &vocab, const float *logits,
   }
 
   // find the top K tokens
-  std::partial_sort(logits_id.begin(), logits_id.begin() + top_k,
-                    logits_id.end(),
-                    [](const std::pair<double, gpt_vocab::id> &a,
-                       const std::pair<double, gpt_vocab::id> &b) {
-                      return a.first > b.first;
-                    });
+  partial_sort(
+      logits_id.begin(), logits_id.begin() + top_k, logits_id.end(),
+      [](const pair<double, gpt_vocab::id> &a,
+         const pair<double, gpt_vocab::id> &b) { return a.first > b.first; });
 
   logits_id.resize(top_k);
 
   double maxl = -INFINITY;
   for (const auto &kv : logits_id) {
-    maxl = std::max(maxl, kv.first);
+    maxl = max(maxl, kv.first);
   }
 
   // compute probs for the top K tokens
-  std::vector<double> probs;
+  vector<double> probs;
   probs.reserve(logits_id.size());
 
   double sum = 0.0;
@@ -642,14 +629,13 @@ auto gpt_sample_top_k_top_p_repeat(const gpt_vocab &vocab, const float *logits,
   //        vocab.id_to_token.at(logits_id[i].second).c_str(), probs[i]);
   //    }
 
-  std::discrete_distribution<> dist(probs.begin(), probs.end());
+  discrete_distribution<> dist(probs.begin(), probs.end());
   int idx = dist(rng);
 
   return logits_id[idx].second;
 }
 
-void high_pass_filter(std::vector<float> &data, float cutoff,
-                      float sample_rate) {
+void high_pass_filter(vector<float> &data, float cutoff, float sample_rate) {
   const float rc = 1.0f / (2.0f * M_PI * cutoff);
   const float dt = 1.0f / sample_rate;
   const float alpha = dt / (rc + dt);
@@ -662,7 +648,7 @@ void high_pass_filter(std::vector<float> &data, float cutoff,
   }
 }
 
-auto vad_simple(std::vector<float> &pcmf32, int sample_rate, int last_ms,
+auto vad_simple(vector<float> &pcmf32, int sample_rate, int last_ms,
                 float vad_thold, float freq_thold, bool verbose) -> bool {
   const int n_samples = pcmf32.size();
   const int n_samples_last = (sample_rate * last_ms) / 1000;
@@ -691,10 +677,10 @@ auto vad_simple(std::vector<float> &pcmf32, int sample_rate, int last_ms,
   energy_last /= n_samples_last;
 
   if (verbose) {
-    std::println(stderr,
-                 "{}: energy_all: {:f}, energy_last: {:f}, vad_thold: {:f}, "
-                 "freq_thold: {:f}",
-                 __func__, energy_all, energy_last, vad_thold, freq_thold);
+    println(stderr,
+            "{}: energy_all: {:f}, energy_last: {:f}, vad_thold: {:f}, "
+            "freq_thold: {:f}",
+            __func__, energy_all, energy_last, vad_thold, freq_thold);
   }
 
   if (energy_last > vad_thold * energy_all) {
@@ -704,12 +690,12 @@ auto vad_simple(std::vector<float> &pcmf32, int sample_rate, int last_ms,
   return true;
 }
 
-auto similarity(const std::string &s0, const std::string &s1) -> float {
+auto similarity(const string &s0, const string &s1) -> float {
   const size_t len0 = s0.size() + 1;
   const size_t len1 = s1.size() + 1;
 
-  std::vector<int> col(len1, 0);
-  std::vector<int> prevCol(len1, 0);
+  vector<int> col(len1, 0);
+  vector<int> prevCol(len1, 0);
 
   for (size_t i = 0; i < len1; i++) {
     prevCol[i] = i;
@@ -718,19 +704,19 @@ auto similarity(const std::string &s0, const std::string &s1) -> float {
   for (size_t i = 0; i < len0; i++) {
     col[0] = i;
     for (size_t j = 1; j < len1; j++) {
-      col[j] = std::min(
-          {1 + col[j - 1], 1 + prevCol[j],
-           prevCol[j - 1] + (i > 0 && s0[i - 1] == s1[j - 1] ? 0 : 1)});
+      col[j] =
+          min({1 + col[j - 1], 1 + prevCol[j],
+               prevCol[j - 1] + (i > 0 && s0[i - 1] == s1[j - 1] ? 0 : 1)});
     }
     col.swap(prevCol);
   }
 
   const float dist = prevCol[len1 - 1];
 
-  return 1.0f - (dist / std::max(s0.size(), s1.size()));
+  return 1.0f - (dist / max(s0.size(), s1.size()));
 }
 
 auto is_file_exist(const char *filename) -> bool {
-  std::ifstream infile(filename);
+  ifstream infile(filename);
   return infile.good();
 }

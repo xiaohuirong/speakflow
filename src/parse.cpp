@@ -5,13 +5,11 @@
 #include <whisper.h>
 
 void print_whisper_params(const whisper_params &p) {
-  std::cout << std::left << std::setw(20) << "name" << std::setw(10) << "value"
-            << std::endl;
-  std::cout << "-------------------------------------------" << std::endl;
+  cout << left << setw(20) << "name" << setw(10) << "value" << endl;
+  cout << "-------------------------------------------" << endl;
 
 #define PRINT_MEMBER(member)                                                   \
-  std::cout << std::setw(20) << #member << std::setw(10) << p.member           \
-            << std::endl;
+  cout << setw(20) << #member << setw(10) << p.member << endl;
 
   PRINT_MEMBER(n_threads);
   PRINT_MEMBER(step_ms);
@@ -117,8 +115,8 @@ auto whisper_params_parse(int argc, char **argv, whisper_params &params)
   CLI11_PARSE(app, argc, argv);
 
   params.use_vad = params.step_ms <= 0;
-  params.keep_ms = std::min(params.keep_ms, params.step_ms);
-  params.length_ms = std::max(params.length_ms, params.step_ms);
+  params.keep_ms = min(params.keep_ms, params.step_ms);
+  params.length_ms = max(params.length_ms, params.step_ms);
 
   params.no_timestamps = !params.use_vad;
   params.no_context |= !params.use_vad;
@@ -130,7 +128,7 @@ auto whisper_params_parse(int argc, char **argv, whisper_params &params)
   params.n_samples_30s = (1e-3 * 30000.0) * WHISPER_SAMPLE_RATE;
 
   params.n_new_line = !params.use_vad
-                          ? std::max(1, params.length_ms / params.step_ms - 1)
+                          ? max(1, params.length_ms / params.step_ms - 1)
                           : 1; // number of steps to print new line
 
   if (params.is_print) {

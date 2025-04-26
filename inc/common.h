@@ -11,13 +11,15 @@
 #include <thread>
 #include <vector>
 
+using namespace std;
+
 //
 // GPT CLI argument parsing
 //
 
 struct gpt_params {
   int32_t seed = -1; // RNG seed
-  int32_t n_threads = std::min(4, (int32_t)std::thread::hardware_concurrency());
+  int32_t n_threads = min(4, (int32_t)thread::hardware_concurrency());
   int32_t n_predict = 200;  // new tokens to predict
   int32_t n_parallel = 1;   // number of parallel streams
   int32_t n_batch = 32;     // batch size for prompt processing
@@ -33,9 +35,9 @@ struct gpt_params {
   int32_t repeat_last_n = 64;
   float repeat_penalty = 1.00f;
 
-  std::string model = "models/gpt-2-117M/ggml-model.bin"; // model path
-  std::string prompt = "";
-  std::string token_test = "";
+  string model = "models/gpt-2-117M/ggml-model.bin"; // model path
+  string prompt = "";
+  string token_test = "";
 
   bool interactive = false;
   int32_t interactive_port = -1;
@@ -45,36 +47,35 @@ auto gpt_params_parse(int argc, char **argv, gpt_params &params) -> bool;
 
 void gpt_print_usage(int argc, char **argv, const gpt_params &params);
 
-auto gpt_random_prompt(std::mt19937 &rng) -> std::string;
+auto gpt_random_prompt(mt19937 &rng) -> string;
 
 //
 // Vocab utils
 //
 
-auto trim(const std::string &s) -> std::string;
+auto trim(const string &s) -> string;
 
-auto replace(const std::string &s, const std::string &from,
-             const std::string &to) -> std::string;
+auto replace(const string &s, const string &from, const string &to) -> string;
 
 struct gpt_vocab {
   using id = int32_t;
-  using token = std::string;
+  using token = string;
 
-  std::map<token, id> token_to_id;
-  std::map<id, token> id_to_token;
-  std::vector<std::string> special_tokens;
+  map<token, id> token_to_id;
+  map<id, token> id_to_token;
+  vector<string> special_tokens;
 
-  void add_special_token(const std::string &token);
+  void add_special_token(const string &token);
 };
 
 // poor-man's JSON parsing
-auto json_parse(const std::string &fname) -> std::map<std::string, int32_t>;
+auto json_parse(const string &fname) -> map<string, int32_t>;
 
-auto convert_to_utf8(const std::wstring &input) -> std::string;
+auto convert_to_utf8(const wstring &input) -> string;
 
-auto convert_to_wstring(const std::string &input) -> std::wstring;
+auto convert_to_wstring(const string &input) -> wstring;
 
-void gpt_split_words(std::string str, std::vector<std::string> &words);
+void gpt_split_words(string str, vector<string> &words);
 
 // split text into tokens
 //
@@ -89,8 +90,8 @@ void gpt_split_words(std::string str, std::vector<std::string> &words);
 // R"('s|'t|'re|'ve|'m|'ll|'d| ?[[:alpha:]]+| ?[[:digit:]]+|
 // ?[^\s[:alpha:][:digit:]]+|\s+(?!\S)|\s+)"
 //
-auto gpt_tokenize(const gpt_vocab &vocab, const std::string &text)
-    -> std::vector<gpt_vocab::id>;
+auto gpt_tokenize(const gpt_vocab &vocab, const string &text)
+    -> vector<gpt_vocab::id>;
 
 // test outputs of gpt_tokenize
 //
@@ -100,10 +101,10 @@ auto gpt_tokenize(const gpt_vocab &vocab, const std::string &text)
 //   - if all sentences are tokenized identically, print 'All tests passed.'
 //   - otherwise, print sentence, huggingface tokens, ggml tokens
 //
-void test_gpt_tokenizer(gpt_vocab &vocab, const std::string &fpath_test);
+void test_gpt_tokenizer(gpt_vocab &vocab, const string &fpath_test);
 
 // load the tokens from encoder.json
-auto gpt_vocab_init(const std::string &fname, gpt_vocab &vocab) -> bool;
+auto gpt_vocab_init(const string &fname, gpt_vocab &vocab) -> bool;
 
 // sample next token given probabilities for each embedding
 //
@@ -114,14 +115,14 @@ auto gpt_vocab_init(const std::string &fname, gpt_vocab &vocab) -> bool;
 // TODO: temperature is not implemented
 //
 auto gpt_sample_top_k_top_p(const gpt_vocab &vocab, const float *logits,
-                            int top_k, double top_p, double temp,
-                            std::mt19937 &rng) -> gpt_vocab::id;
+                            int top_k, double top_p, double temp, mt19937 &rng)
+    -> gpt_vocab::id;
 
 auto gpt_sample_top_k_top_p_repeat(const gpt_vocab &vocab, const float *logits,
                                    const int32_t *last_n_tokens_data,
                                    size_t last_n_tokens_data_size, int top_k,
                                    double top_p, double temp, int repeat_last_n,
-                                   float repeat_penalty, std::mt19937 &rng)
+                                   float repeat_penalty, mt19937 &rng)
     -> gpt_vocab::id;
 
 //
@@ -131,9 +132,9 @@ auto gpt_sample_top_k_top_p_repeat(const gpt_vocab &vocab, const float *logits,
 // Write PCM data into WAV audio file
 class wav_writer {
 private:
-  std::ofstream file;
+  ofstream file;
   uint32_t dataSize = 0;
-  std::string wav_filename;
+  string wav_filename;
 
   auto write_header(const uint32_t sample_rate, const uint16_t bits_per_sample,
                     const uint16_t channels) -> bool {
@@ -169,24 +170,24 @@ private:
       dataSize += sizeof(int16_t);
     }
     if (file.is_open()) {
-      file.seekp(4, std::ios::beg);
+      file.seekp(4, ios::beg);
       uint32_t fileSize = 36 + dataSize;
       file.write(reinterpret_cast<char *>(&fileSize), 4);
-      file.seekp(40, std::ios::beg);
+      file.seekp(40, ios::beg);
       file.write(reinterpret_cast<char *>(&dataSize), 4);
-      file.seekp(0, std::ios::end);
+      file.seekp(0, ios::end);
     }
     return true;
   }
 
-  auto open_wav(const std::string &filename) -> bool {
+  auto open_wav(const string &filename) -> bool {
     if (filename != wav_filename) {
       if (file.is_open()) {
         file.close();
       }
     }
     if (!file.is_open()) {
-      file.open(filename, std::ios::binary);
+      file.open(filename, ios::binary);
       wav_filename = filename;
       dataSize = 0;
     }
@@ -194,7 +195,7 @@ private:
   }
 
 public:
-  auto open(const std::string &filename, const uint32_t sample_rate,
+  auto open(const string &filename, const uint32_t sample_rate,
             const uint16_t bits_per_sample, const uint16_t channels) -> bool {
 
     if (open_wav(filename)) {
@@ -224,15 +225,14 @@ public:
 
 // Apply a high-pass frequency filter to PCM audio
 // Suppresses frequencies below cutoff Hz
-void high_pass_filter(std::vector<float> &data, float cutoff,
-                      float sample_rate);
+void high_pass_filter(vector<float> &data, float cutoff, float sample_rate);
 
 // Basic voice activity detection (VAD) using audio energy adaptive threshold
-auto vad_simple(std::vector<float> &pcmf32, int sample_rate, int last_ms,
+auto vad_simple(vector<float> &pcmf32, int sample_rate, int last_ms,
                 float vad_thold, float freq_thold, bool verbose) -> bool;
 
 // compute similarity between two strings using Levenshtein distance
-auto similarity(const std::string &s0, const std::string &s1) -> float;
+auto similarity(const string &s0, const string &s1) -> float;
 
 //
 // Terminal utils
@@ -258,16 +258,16 @@ static auto rgb2xterm256(int r, int g, int b) -> int {
   return il + 0350;
 }
 
-static auto set_xterm256_foreground(int r, int g, int b) -> std::string {
+static auto set_xterm256_foreground(int r, int g, int b) -> string {
   int x = rgb2xterm256(r, g, b);
-  std::ostringstream oss;
+  ostringstream oss;
   oss << "\033[38;5;" << x << "m";
   return oss.str();
 }
 
 // Lowest is red, middle is yellow, highest is green. Color scheme from
 // Paul Tol; it is colorblind friendly https://personal.sron.nl/~pault/
-const std::vector<std::string> k_colors = {
+const vector<string> k_colors = {
     set_xterm256_foreground(220, 5, 12),
     set_xterm256_foreground(232, 96, 28),
     set_xterm256_foreground(241, 147, 45),

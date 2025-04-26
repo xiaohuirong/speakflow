@@ -30,7 +30,7 @@ MainWindow::MainWindow(QWidget *parent, const whisper_params &params)
 
   ui->statusbar->showMessage("Whisper未启动...");
 
-  chatCallback = [this](const std::string &message, bool is_response) {
+  chatCallback = [this](const string &message, bool is_response) {
     m_content.appendText(QString::fromStdString(message));
     if (!is_response) {
       QMetaObject::invokeMethod(ui->queue, "dequeueMessage",
@@ -42,22 +42,22 @@ MainWindow::MainWindow(QWidget *parent, const whisper_params &params)
   audio = new audio_async(params.length_ms);
   if (!audio->init(params.capture_id, WHISPER_SAMPLE_RATE,
                    (SDL_bool)params.is_microphone)) {
-    std::println(stderr, "{}: audio.init() failed!", __func__);
+    println(stderr, "{}: audio.init() failed!", __func__);
     exit(-1);
   }
 
   // whisper init
   if (params.language != "auto" &&
       whisper_lang_id(params.language.c_str()) == -1) {
-    std::println(stderr, "error: unknown language '{}'", params.language);
+    println(stderr, "error: unknown language '{}'", params.language);
     // whisper_print_usage(argc, argv, params);
     exit(0);
   }
 
-  whisperCallback = [this, params](const std::string &text) {
-    std::string keyword = "明镜与点点";
-    std::string message = text;
-    if (message != "" && message.find(keyword) == std::string::npos) {
+  whisperCallback = [this, params](const string &text) {
+    string keyword = "明镜与点点";
+    string message = text;
+    if (message != "" && message.find(keyword) == string::npos) {
       message += params.prompt;
       ui->queue->enqueueMessage(QString::fromStdString(message));
       QMetaObject::invokeMethod(
@@ -71,15 +71,15 @@ MainWindow::MainWindow(QWidget *parent, const whisper_params &params)
   model = new S2T(this->params, whisperCallback);
   mychat = new Chat(this->params, chatCallback);
 
-  pcmf32 = std::vector<float>(params.n_samples_30s, 0.0f);
-  pcmf32_new = std::vector<float>(params.n_samples_30s, 0.0f);
+  pcmf32 = vector<float>(params.n_samples_30s, 0.0f);
+  pcmf32_new = vector<float>(params.n_samples_30s, 0.0f);
 
-  std::ofstream fout;
+  ofstream fout;
   if (params.fname_out.length() > 0) {
     fout.open(params.fname_out);
     if (!fout.is_open()) {
-      std::println(stderr, "{}: failed to open output file '{}'!", __func__,
-                   params.fname_out);
+      println(stderr, "{}: failed to open output file '{}'!", __func__,
+              params.fname_out);
       exit(-1);
     }
   }
@@ -88,9 +88,9 @@ MainWindow::MainWindow(QWidget *parent, const whisper_params &params)
     wavWriter = new wav_writer();
 
     // Get current date/time for filename
-    auto now = std::chrono::system_clock::now();
-    std::string filename = std::format(
-        "{:%Y%m%d%H%M%S}.wav", std::chrono::current_zone()->to_local(now));
+    auto now = chrono::system_clock::now();
+    string filename =
+        format("{:%Y%m%d%H%M%S}.wav", chrono::current_zone()->to_local(now));
 
     wavWriter->open(filename, WHISPER_SAMPLE_RATE, 16, 1);
   }
@@ -122,7 +122,7 @@ void MainWindow::handleClick() {
     ui->clickButton->setText("停止");
     ui->statusbar->showMessage("Whisper实时记录中...");
     audio->resume();
-    t_change = std::chrono::high_resolution_clock::now();
+    t_change = chrono::high_resolution_clock::now();
     timer->start(2000);
   } else {
     is_running = false;
@@ -143,7 +143,7 @@ auto MainWindow::running() -> int {
     wavWriter->write(pcmf32_new.data(), pcmf32_new.size());
   }
 
-  const auto t_now = std::chrono::high_resolution_clock::now();
+  const auto t_now = chrono::high_resolution_clock::now();
 
   audio->get(2000, pcmf32_new);
 
@@ -153,8 +153,7 @@ auto MainWindow::running() -> int {
     last_status = cur_status;
     if (!cur_status) {
       const auto diff_len =
-          std::chrono::duration_cast<std::chrono::milliseconds>(t_now -
-                                                                t_change);
+          chrono::duration_cast<chrono::milliseconds>(t_now - t_change);
       audio->get(diff_len.count() + 2000, pcmf32);
     } else {
       t_change = t_now;
@@ -162,8 +161,8 @@ auto MainWindow::running() -> int {
     }
   } else {
     if (cur_status &&
-        std::chrono::duration_cast<std::chrono::milliseconds>(t_now - t_change)
-                .count() >= 30000) {
+        chrono::duration_cast<chrono::milliseconds>(t_now - t_change).count() >=
+            30000) {
       audio->get(30000, pcmf32);
       t_change = t_now;
     } else {
@@ -171,10 +170,10 @@ auto MainWindow::running() -> int {
     }
   }
 
-  std::println("before add Voice");
+  println("before add Voice");
   model->addVoice(params.no_context, pcmf32);
   // model->inference(params.no_context, pcmf32);
-  std::println("after add Voice");
+  println("after add Voice");
 
   return 0;
 }

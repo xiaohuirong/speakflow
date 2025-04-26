@@ -49,19 +49,19 @@ S2T::~S2T() {
   whisper_free(ctx);
 }
 
-void S2T::start() { processThread = std::thread(&S2T::processVoices, this); }
+void S2T::start() { processThread = thread(&S2T::processVoices, this); }
 
 void S2T::processVoices() {
   while (true) {
-    Voice voice = {.voice_data = std::vector<float>(), .no_context = false};
+    Voice voice = {.voice_data = vector<float>(), .no_context = false};
 
     {
-      std::unique_lock<std::mutex> lock(queueMutex);
+      unique_lock<mutex> lock(queueMutex);
       cv.wait(lock, [this]() { return !voiceQueue.empty() || stopInference; });
-      std::println("pick a voice");
+      println("pick a voice");
 
       if (stopInference) {
-        std::println("S2T stop then return");
+        println("S2T stop then return");
         return;
       }
 
@@ -75,18 +75,18 @@ void S2T::processVoices() {
 
     if (whisper_callback) {
       if (!voice.voice_data.empty()) {
-        std::string text = inference(voice.no_context, voice.voice_data);
+        string text = inference(voice.no_context, voice.voice_data);
         whisper_callback(text);
       } else {
-        std::println("no voice");
+        println("no voice");
       }
     }
   }
 }
 
-void S2T::addVoice(bool no_context, std::vector<float> voice_data) {
+void S2T::addVoice(bool no_context, vector<float> voice_data) {
   {
-    std::lock_guard<std::mutex> lock(queueMutex);
+    lock_guard<mutex> lock(queueMutex);
     voiceQueue.push({voice_data, no_context});
   }
   cv.notify_one();
@@ -94,20 +94,20 @@ void S2T::addVoice(bool no_context, std::vector<float> voice_data) {
 
 void S2T::stop() {
   {
-    std::lock_guard<std::mutex> lock(queueMutex);
+    lock_guard<mutex> lock(queueMutex);
     stopInference = true;
   }
   cv.notify_all();
   processThread.join();
 }
 
-static std::ofstream fout;
+static ofstream fout;
 
 // duration = (t_last - t_start).count()
-auto S2T::inference(bool no_context, std::vector<float> pcmf32) -> std::string
+auto S2T::inference(bool no_context, vector<float> pcmf32) -> string
 // run the inference
 {
-  std::string result;
+  string result;
 
   wparams.prompt_tokens = no_context ? nullptr : prompt_tokens.data();
   wparams.prompt_n_tokens = no_context ? 0 : prompt_tokens.size();
@@ -131,8 +131,8 @@ auto S2T::inference(bool no_context, std::vector<float> pcmf32) -> std::string
       const int64_t t0 = whisper_full_get_segment_t0(ctx, i);
       const int64_t t1 = whisper_full_get_segment_t1(ctx, i);
 
-      std::string output = "[" + to_timestamp(t0, false) + " --> " +
-                           to_timestamp(t1, false) + "]  " + text;
+      string output = "[" + to_timestamp(t0, false) + " --> " +
+                      to_timestamp(t1, false) + "]  " + text;
 
       if (whisper_full_get_segment_speaker_turn_next(ctx, i)) {
         output += " [SPEAKER_TURN]";
@@ -140,12 +140,12 @@ auto S2T::inference(bool no_context, std::vector<float> pcmf32) -> std::string
 
       output += "\n";
 
-      std::print("{}", output);
+      print("{}", output);
       fflush(stdout);
     }
 
-    std::println("");
-    std::println("### Transcription {} END", n_iter);
+    println("");
+    println("### Transcription {} END", n_iter);
   }
 
   ++n_iter;
