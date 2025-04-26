@@ -74,16 +74,6 @@ MainWindow::MainWindow(QWidget *parent, const whisper_params &params)
   pcmf32 = vector<float>(params.n_samples_30s, 0.0f);
   pcmf32_new = vector<float>(params.n_samples_30s, 0.0f);
 
-  ofstream fout;
-  if (params.fname_out.length() > 0) {
-    fout.open(params.fname_out);
-    if (!fout.is_open()) {
-      spdlog::error("{}: failed to open output file '{}'!", __func__,
-                    params.fname_out);
-      exit(-1);
-    }
-  }
-
   timer = new QTimer();
   connect(timer, &QTimer::timeout, this, &MainWindow::running);
 

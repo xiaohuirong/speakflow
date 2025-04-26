@@ -94,7 +94,6 @@ auto whisper_params_parse(int argc, char **argv, whisper_params &params)
       ->transform(CLI::IsMember({true, false}));
   app.add_option("-l,--language", params.language, "spoken language");
   app.add_option("-m,--model", params.model, "model path");
-  app.add_option("-f,--file", params.fname_out, "text output file name");
   app.add_flag("--tdrz,--tinydiarize", params.tinydiarize,
                "enable tinydiarize (requires a tdrz model)");
   app.add_flag("--sa,--save-audio", params.save_audio,
