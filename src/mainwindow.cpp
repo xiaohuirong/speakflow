@@ -9,6 +9,7 @@
 #include <chrono>
 #include <print>
 #include <qtimer.h>
+#include <spdlog/spdlog.h>
 
 MainWindow::MainWindow(QWidget *parent, const whisper_params &params)
     : QMainWindow(parent), ui(new Ui::MainWindow), params(params) {
@@ -42,24 +43,23 @@ MainWindow::MainWindow(QWidget *parent, const whisper_params &params)
   audio = new audio_async(params.length_ms);
   if (!audio->init(params.capture_id, WHISPER_SAMPLE_RATE,
                    (SDL_bool)params.is_microphone)) {
-    println(stderr, "{}: audio.init() failed!", __func__);
+    spdlog::error("{}: audio.init() failed!", __func__);
     exit(-1);
   }
 
   // whisper init
   if (params.language != "auto" &&
       whisper_lang_id(params.language.c_str()) == -1) {
-    println(stderr, "error: unknown language '{}'", params.language);
+    spdlog::error("error: unknown language '{}'", params.language);
     // whisper_print_usage(argc, argv, params);
     exit(0);
   }
 
-  whisperCallback = [this, params](const string &text) {
+  whisperCallback = [this](const string &text) {
     string keyword = "明镜与点点";
     string message = text;
     if (message != "" && message.find(keyword) == string::npos) {
-      message += params.prompt;
-      ui->queue->enqueueMessage(QString::fromStdString(message));
+      message += this->params.prompt;
       QMetaObject::invokeMethod(
           ui->queue, "enqueueMessage", Qt::QueuedConnection,
           Q_ARG(QString, QString::fromStdString(message)));
@@ -78,8 +78,8 @@ MainWindow::MainWindow(QWidget *parent, const whisper_params &params)
   if (params.fname_out.length() > 0) {
     fout.open(params.fname_out);
     if (!fout.is_open()) {
-      println(stderr, "{}: failed to open output file '{}'!", __func__,
-              params.fname_out);
+      spdlog::error("{}: failed to open output file '{}'!", __func__,
+                    params.fname_out);
       exit(-1);
     }
   }
@@ -170,10 +170,9 @@ auto MainWindow::running() -> int {
     }
   }
 
-  println("before add Voice");
+  spdlog::info("before add Voice");
   model->addVoice(params.no_context, pcmf32);
-  // model->inference(params.no_context, pcmf32);
-  println("after add Voice");
+  spdlog::info("after add Voice");
 
   return 0;
 }

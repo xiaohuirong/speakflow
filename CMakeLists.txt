@@ -41,6 +41,7 @@ endif()
 
 find_package(SDL2 REQUIRED)
 find_package(Qt6 REQUIRED COMPONENTS Widgets WebEngineWidgets)
+find_package(spdlog REQUIRED)
 
 file(GLOB SOURCES src/*.cpp res/*.qrc)
 set(UI_FILES ui/mainwindow.ui)
@@ -57,5 +58,11 @@ target_include_directories(
   ${PROJECT_NAME} PRIVATE inc ${CMAKE_BINARY_DIR} ${WHISPER_INCLUDE_DIR}
                           ${LIBOAI_INCLUDE_DIR} ${CLI11_INCLUDE_DIR})
 target_link_libraries(
-  ${PROJECT_NAME} PRIVATE ${WHISPER_LIB} ${LIBOAI_LIB} ${SDL2_LIBRARIES}
-                          Qt6::Widgets Qt6::WebEngineWidgets)
+  ${PROJECT_NAME}
+  PRIVATE ${WHISPER_LIB}
+          ${LIBOAI_LIB}
+          ${SDL2_LIBRARIES}
+          spdlog
+          fmt
+          Qt6::Widgets
+          Qt6::WebEngineWidgets)

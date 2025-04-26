@@ -1,7 +1,7 @@
 #include "chat.h"
 #include "liboai.h"
-#include <ostream>
 #include <print>
+#include <spdlog/spdlog.h>
 #include <thread>
 
 Chat::Chat(whisper_params &params, Callback callback) : stopChat(false) {
@@ -14,14 +14,14 @@ Chat::Chat(whisper_params &params, Callback callback) : stopChat(false) {
   model = params.llm;
 
   if (!oai->auth.SetKey(key)) {
-    println("auth failed!");
+    spdlog::error("auth failed!");
   }
 
   oai->auth.SetMaxTimeout(params.timeout);
 
   if (params.system != "") {
     if (!convo.SetSystemData(params.system)) {
-      println("set system data failed");
+      spdlog::error("set system data failed");
     }
   }
 }
@@ -65,7 +65,7 @@ void Chat::processMessages() {
       messageQueue.pop();
     }
 
-    cout << "Processing message: " << message.text << endl;
+    spdlog::info("Processing message: {0}", message.text);
     message_count += 1;
 
     whisper_callback(format("## USER {} \n", message_count) + message.text,
@@ -96,16 +96,16 @@ auto Chat::wait_response(const string input) -> string {
 
     // update our conversation with the response
     if (!convo.Update(response)) {
-      println("update conversation failed");
+      spdlog::error("update conversation failed");
       return "This is a error: update conversation failed";
     }
 
     // print the response
-    cout << convo.GetLastResponse() << endl;
+    spdlog::info("AI responce is: {0}", convo.GetLastResponse());
 
     return convo.GetLastResponse();
   } catch (std::exception &e) {
-    cout << e.what() << endl;
+    spdlog::error(e.what());
     return "This is a error: try fail";
   }
 }

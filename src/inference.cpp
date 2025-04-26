@@ -7,6 +7,7 @@
 #include <cstdio>
 #include <fstream>
 #include <print>
+#include <spdlog/spdlog.h>
 #include <string>
 #include <vector>
 
@@ -58,10 +59,10 @@ void S2T::processVoices() {
     {
       unique_lock<mutex> lock(queueMutex);
       cv.wait(lock, [this]() { return !voiceQueue.empty() || stopInference; });
-      println("pick a voice");
+      spdlog::info(__func__, "pick a voice");
 
       if (stopInference) {
-        println("S2T stop then return");
+        spdlog::info(__func__, "S2T stop then return");
         return;
       }
 
@@ -78,7 +79,7 @@ void S2T::processVoices() {
         string text = inference(voice.no_context, voice.voice_data);
         whisper_callback(text);
       } else {
-        println("no voice");
+        spdlog::error(__func__, "no voice");
       }
     }
   }
@@ -138,14 +139,11 @@ auto S2T::inference(bool no_context, vector<float> pcmf32) -> string
         output += " [SPEAKER_TURN]";
       }
 
-      output += "\n";
-
-      print("{}", output);
+      spdlog::info("{}", output);
       fflush(stdout);
     }
 
-    println("");
-    println("### Transcription {} END", n_iter);
+    spdlog::info("### Transcription {} END", n_iter);
   }
 
   ++n_iter;
