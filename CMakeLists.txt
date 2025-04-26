@@ -40,7 +40,7 @@ else()
 endif()
 
 find_package(SDL2 REQUIRED)
-find_package(Qt6 REQUIRED COMPONENTS Widgets WebEngineWidgets Multimedia)
+find_package(Qt6 REQUIRED COMPONENTS Widgets WebEngineWidgets Multimedia Charts)
 find_package(spdlog REQUIRED)
 
 file(GLOB SOURCES src/*.cpp res/*.qrc)
@@ -66,4 +66,5 @@ target_link_libraries(
           fmt
           Qt6::Widgets
           Qt6::WebEngineWidgets
-          Qt6::Multimedia)
+          Qt6::Multimedia
+          Qt6::Charts)

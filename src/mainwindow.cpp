@@ -129,6 +129,14 @@ auto MainWindow::running() -> int {
 
   bool cur_status = !::vad_simple(pcmf32_new, WHISPER_SAMPLE_RATE, 1000,
                                   params.vad_thold, params.freq_thold, false);
+
+  if (cur_status) {
+    this->monitorwindow->add_point(t_now, 1);
+  } else {
+    this->monitorwindow->add_point(t_now, 0);
+  }
+  spdlog::info("status: {}", cur_status);
+
   if (cur_status ^ last_status) {
     last_status = cur_status;
     if (!cur_status) {
