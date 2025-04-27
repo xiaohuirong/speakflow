@@ -20,7 +20,7 @@ if(USE_AUDIO STREQUAL "SDL")
   # PUBLIC let another file can use this *.h
   target_include_directories(audio_backend PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}
                                                   ${SDL2_INCLUDE_DIRS})
-  target_link_libraries(audio_backend PRIVATE SDL2)
+  target_link_libraries(audio_backend PUBLIC SDL2)
   target_compile_definitions(audio_backend PUBLIC USE_SDL_AUDIO=1)
   message(STATUS "Using SDL audio backend")
 
@@ -29,7 +29,7 @@ elseif(USE_AUDIO STREQUAL "QT")
   set(CMAKE_AUTOMOC ON)
   add_library(audio_backend STATIC qtaudio.cpp)
   target_include_directories(audio_backend PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
-  target_link_libraries(audio_backend PRIVATE Qt6::Multimedia)
+  target_link_libraries(audio_backend PUBLIC Qt6::Multimedia)
   target_compile_definitions(audio_backend PUBLIC USE_QT_AUDIO=1)
   message(STATUS "Using Qt audio backend")
 endif()
