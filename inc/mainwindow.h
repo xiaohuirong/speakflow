@@ -4,7 +4,7 @@
 #include "chat.h"
 
 #ifdef USE_SDL_AUDIO
-#include "common-sdl.h"
+#include "sdlaudio.h"
 #elif defined(USE_QT_AUDIO)
 #include "qtaudio.h"
 #endif

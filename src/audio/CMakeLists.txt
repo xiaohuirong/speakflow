@@ -16,7 +16,7 @@ endif()
 # 根据选择添加相应的源文件
 if(USE_AUDIO STREQUAL "SDL")
   find_package(SDL2 REQUIRED)
-  add_library(audio_backend STATIC common-sdl.cpp)
+  add_library(audio_backend STATIC sdlaudio.cpp)
   # PUBLIC let another file can use this *.h
   target_include_directories(audio_backend PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}
                                                   ${SDL2_INCLUDE_DIRS})
