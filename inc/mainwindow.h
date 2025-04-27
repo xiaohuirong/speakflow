@@ -2,7 +2,13 @@
 #define MAINWINDOW_H
 
 #include "chat.h"
+
+#ifdef USE_SDL_AUDIO
 #include "common-sdl.h"
+#elif defined(USE_QT_AUDIO)
+#include "qtaudio.h"
+#endif
+
 #include "document.h"
 #include "inference.h"
 #include "monitorwindow.h"
@@ -33,7 +39,13 @@ public:
 private:
   Ui::MainWindow *ui;
   whisper_params params;
+
+#ifdef USE_SDL_AUDIO
   audio_async *audio;
+#elif defined(USE_QT_AUDIO)
+  AudioAsync *audio;
+#endif
+
   Chat *mychat;
   S2T *model;
 

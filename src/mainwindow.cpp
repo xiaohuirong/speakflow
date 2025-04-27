@@ -45,6 +45,7 @@ MainWindow::MainWindow(QWidget *parent, const whisper_params &params)
     }
   };
 
+#ifdef USE_SDL_AUDIO
   // init audio
   audio = new audio_async(params.length_ms);
   if (!audio->init(params.capture_id, WHISPER_SAMPLE_RATE,
@@ -52,6 +53,12 @@ MainWindow::MainWindow(QWidget *parent, const whisper_params &params)
     spdlog::error("{}: audio.init() failed!", __func__);
     exit(-1);
   }
+#elif defined(USE_QT_AUDIO)
+  audio = new AudioAsync(params.length_ms);
+  if (!audio->init(-1, WHISPER_SAMPLE_RATE, true)) {
+    spdlog::error("Failed to initialize audio");
+  }
+#endif
 
   // whisper init
   if (params.language != "auto" &&
