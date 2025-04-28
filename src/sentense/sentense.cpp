@@ -1,11 +1,12 @@
 // vad_processor.cpp
 #include "sentense.h"
+#include <algorithm>
 #include <chrono>
 #include <iostream>
 #include <thread>
 
 Sentense::Sentense(const std::string &model_path, int sample_rate,
-                           int capture_id, bool is_microphone)
+                   int capture_id, bool is_microphone)
     : m_model_path(model_path), m_sample_rate(sample_rate),
       m_capture_id(capture_id),
       m_is_microphone(is_microphone ? SDL_TRUE : SDL_FALSE),
@@ -19,7 +20,7 @@ Sentense::Sentense(const std::string &model_path, int sample_rate,
 
 Sentense::~Sentense() { stop(); }
 
-bool Sentense::initialize() {
+auto Sentense::initialize() -> bool {
   if (!m_audio_capture.init(m_capture_id, m_sample_rate, m_is_microphone)) {
     std::cerr << "Failed to initialize audio capture" << std::endl;
     return false;
@@ -133,8 +134,13 @@ void Sentense::checkForSentences() {
   m_vad.process(audio_for_vad);
   auto speeches = m_vad.get_speech_timestamps();
 
-  if (speeches.empty())
+  if (speeches.empty()) {
+    m_buffer_fill = 0;
     return;
+  }
+
+  size_t start = 0;
+  size_t end = 0;
 
   // 处理检测到的语音段
   for (size_t i = 0; i < speeches.size() - 1; i++) {
@@ -144,31 +150,29 @@ void Sentense::checkForSentences() {
       continue;
     }
 
+    end = speech.end;
+
     // 提取完整句子
-    std::vector<float> sentence(audio_for_vad.begin() + speech.start,
-                                audio_for_vad.begin() + speech.end);
+    std::vector<float> sentence(audio_for_vad.begin() + start,
+                                audio_for_vad.begin() + end);
 
     // 通过回调返回句子
     m_callback(sentence);
+
+    start = end;
   }
 
-  // 保留最后一个可能的未完成句子在缓冲区中
-  const auto &last_speech = speeches.back();
-  size_t samples_to_keep = audio_for_vad.size() - last_speech.start;
+  end = speeches[speeches.size() - 1].end;
 
-  // 更新缓冲区，只保留最后一个语音段之后的数据
-  if (samples_to_keep > 0) {
-    std::vector<float> remaining_audio(
-        audio_for_vad.begin() + last_speech.start, audio_for_vad.end());
+  if (m_buffer_fill - end >= PROCESS_INTERVAL_MS * m_sample_rate / 1000) {
+    std::vector<float> sentence(audio_for_vad.begin() + start,
+                                audio_for_vad.begin() + end);
+    m_callback(sentence);
 
-    // 将剩余数据移到缓冲区开头
-    std::copy(remaining_audio.begin(), remaining_audio.end(),
-              m_ring_buffer.begin());
-    m_buffer_pos = remaining_audio.size();
-    m_buffer_fill = remaining_audio.size();
-  } else {
-    m_buffer_pos = 0;
     m_buffer_fill = 0;
+    m_buffer_pos = 0;
+  } else {
+    m_buffer_fill -= start;
   }
 
   m_vad.reset();

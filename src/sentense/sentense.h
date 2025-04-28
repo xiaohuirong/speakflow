@@ -43,7 +43,7 @@ private:
   std::mutex m_buffer_mutex;
 
   // Processing parameters
-  static constexpr int BUFFER_DURATION_MS = 5000; // 5秒环形缓冲区
-  static constexpr int PROCESS_INTERVAL_MS = 100; // 每100ms处理一次
-  static constexpr int MIN_SENTENCE_GAP_MS = 500; // 500ms静默视为句子结束
+  static constexpr int BUFFER_DURATION_MS = 50000; // 5秒环形缓冲区
+  static constexpr int PROCESS_INTERVAL_MS = 2000; // 每2000ms处理一次
+  static constexpr int MIN_SENTENCE_GAP_MS = 500;  // 500ms静默视为句子结束
 };
