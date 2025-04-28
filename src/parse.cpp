@@ -52,6 +52,8 @@ void print_whisper_params(const whisper_params &p) {
 
   PRINT_MEMBER(prompt);
   PRINT_MEMBER(init_prompt);
+
+  PRINT_MEMBER(vad_model);
 }
 
 auto whisper_params_parse(int argc, char **argv, whisper_params &params)
@@ -106,6 +108,7 @@ auto whisper_params_parse(int argc, char **argv, whisper_params &params)
   app.add_option("--prompt", params.prompt, "LLM additional prompt");
   app.add_option("--init-prompt", params.init_prompt, "LLM initial prompt");
   app.add_option("--system", params.system, "system role");
+  app.add_option("--vad-model", params.vad_model, "vad model path");
 
   CLI11_PARSE(app, argc, argv);
 

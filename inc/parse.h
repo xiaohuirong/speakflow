@@ -55,6 +55,8 @@ struct whisper_params {
   string prompt = "";
   string init_prompt = "";
   string system = "";
+
+  string vad_model = "models/silero_vad.onnx";
 };
 
 auto whisper_params_parse(int argc, char **argv, whisper_params &params)

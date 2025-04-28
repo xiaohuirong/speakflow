@@ -5,6 +5,7 @@ set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
 
 add_subdirectory(src/audio)
+add_subdirectory(src/vad)
 
 find_package(whisper QUIET)
 if(NOT whisper_FOUND)
