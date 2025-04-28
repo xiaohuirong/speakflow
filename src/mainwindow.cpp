@@ -13,7 +13,8 @@
 #include <spdlog/spdlog.h>
 
 MainWindow::MainWindow(QWidget *parent, const whisper_params &params)
-    : QMainWindow(parent), ui(new Ui::MainWindow), params(params) {
+    : QMainWindow(parent), ui(new Ui::MainWindow), params(params),
+      vad(params.vad_model) {
   ui->setupUi(this);
 
   monitorwindow = new MonitorWindow(this);
@@ -164,6 +165,25 @@ auto MainWindow::running() -> int {
       return 0;
     }
   }
+
+  spdlog::info("before vad");
+  // Process the audio.
+  vad.process(pcmf32);
+  // Retrieve the speech timestamps (in samples).
+  vector<timestamp_t> stamps = vad.get_speech_timestamps();
+  // Convert timestamps to seconds and round to one decimal place (for
+  // 16000 Hz).
+  const float sample_rate_float = 16000.0f;
+  for (size_t i = 0; i < stamps.size(); i++) {
+    float start_sec =
+        rint((stamps[i].start / sample_rate_float) * 10.0f) / 10.0f;
+    float end_sec = rint((stamps[i].end / sample_rate_float) * 10.0f) / 10.0f;
+    cout << "Speech detecte from " << fixed << setprecision(1) << start_sec
+         << " s to " << fixed << setprecision(1) << end_sec << " s" << endl;
+  }
+  // Optionally, reset the internal state.
+  vad.reset();
+  spdlog::info("after vad");
 
   spdlog::info("before add Voice");
   model->addVoice(params.no_context, pcmf32);

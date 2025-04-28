@@ -8,7 +8,7 @@ set(VAD_SOURCES silero-vad-onnx.cpp)
 add_library(vad STATIC ${VAD_SOURCES})
 
 # Include directories
-target_include_directories(vad PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
+target_include_directories(vad PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 
 # Link libraries
-target_link_libraries(vad PRIVATE onnxruntime::onnxruntime)
+target_link_libraries(vad PUBLIC onnxruntime::onnxruntime)

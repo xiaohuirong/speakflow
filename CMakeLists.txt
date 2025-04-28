@@ -67,4 +67,5 @@ target_link_libraries(
           Qt6::Widgets
           Qt6::WebEngineWidgets
           Qt6::Charts
-          audio_backend)
+          audio_backend
+          vad)

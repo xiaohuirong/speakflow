@@ -14,6 +14,7 @@
 #include "monitorwindow.h"
 #include "parse.h"
 #include "previewpage.h"
+#include "silero-vad-onnx.h"
 
 #include <QMainWindow>
 #include <QString>
@@ -67,6 +68,8 @@ private:
   function<void(const string &)> whisperCallback;
 
   MonitorWindow *monitorwindow;
+
+  VadIterator vad;
 
 private slots:
   void handleClick();
