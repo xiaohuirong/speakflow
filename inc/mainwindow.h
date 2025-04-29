@@ -33,24 +33,19 @@ public:
   ~MainWindow() override;
 
 private:
-  Ui::MainWindow *ui;
   whisper_params params;
-
   Sentense sentense;
-
-  Chat *mychat;
-  S2T *model;
-
   bool is_running = false;
-
   Document m_content;
 
-  PreviewPage *page;
+  unique_ptr<Ui::MainWindow> ui;
+  unique_ptr<PreviewPage> page;
+  unique_ptr<Chat> mychat;
+  unique_ptr<S2T> model;
+  unique_ptr<MonitorWindow> monitorwindow;
 
   function<void(const string &, bool)> chatCallback;
   function<void(const string &)> whisperCallback;
-
-  MonitorWindow *monitorwindow;
 
 private slots:
   void handleClick();
