@@ -33,6 +33,8 @@ S2T::S2T(whisper_params params, Callback callback) : stopInference(false) {
   wparams.single_segment = !params.use_vad;
   wparams.max_tokens = params.max_tokens;
   wparams.language = params.language.c_str();
+  spdlog::info("params.language is: {}", params.language);
+  spdlog::info("wparams.language is: {}", wparams.language);
   wparams.n_threads = params.n_threads;
   wparams.beam_search.beam_size = params.beam_size;
 

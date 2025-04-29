@@ -2,14 +2,12 @@
 #define MAINWINDOW_H
 
 #include "chat.h"
-
-#include "sentense.h"
-
 #include "document.h"
 #include "inference.h"
 #include "monitorwindow.h"
 #include "parse.h"
 #include "previewpage.h"
+#include "sentense.h"
 
 #include <QMainWindow>
 #include <QString>
@@ -33,6 +31,10 @@ public:
   ~MainWindow() override;
 
 private:
+  using SentenceCallback = std::function<void(const std::vector<float> &)>;
+  using ChatCallback = std::function<void(const std::string &, bool)>;
+  using WhisperCallback = std::function<void(const std::string &)>;
+
   whisper_params params;
   Sentense sentense;
   bool is_running = false;
@@ -40,12 +42,13 @@ private:
 
   unique_ptr<Ui::MainWindow> ui;
   unique_ptr<PreviewPage> page;
-  unique_ptr<Chat> mychat;
+  unique_ptr<Chat> chat;
   unique_ptr<S2T> model;
   unique_ptr<MonitorWindow> monitorwindow;
 
-  function<void(const string &, bool)> chatCallback;
-  function<void(const string &)> whisperCallback;
+  ChatCallback chatCallback;
+  WhisperCallback whisperCallback;
+  SentenceCallback sentenceCallback;
 
 private slots:
   void handleClick();

@@ -15,9 +15,9 @@ MainWindow::MainWindow(QWidget *parent, const whisper_params &params)
     : QMainWindow(parent), ui(make_unique<Ui::MainWindow>()), params(params),
       sentense(params.vad_model) {
   ui->setupUi(this);
+  ui->statusbar->showMessage("Whisper未启动...");
 
   monitorwindow = make_unique<MonitorWindow>(this);
-
   connect(ui->openmonitor, &QPushButton::clicked, this,
           [this]() { monitorwindow->show(); });
 
@@ -32,24 +32,11 @@ MainWindow::MainWindow(QWidget *parent, const whisper_params &params)
   connect(ui->clickButton, &QPushButton::clicked, this,
           &MainWindow::handleClick);
 
-  ui->statusbar->showMessage("Whisper未启动...");
-
-  chatCallback = [this](const string &message, bool is_response) {
-    QMetaObject::invokeMethod(this, [this, message, is_response]() {
-      m_content.appendText(QString::fromStdString(message));
-
-      ui->preview->page()->runJavaScript("content.scrollToBottom();");
-
-      if (!is_response) {
-        ui->queue->dequeueMessage();
-      }
-    });
-  };
-
-  sentense.setSentenceCallback([this](const vector<float> &sen) {
+  sentenceCallback = [this](const vector<float> &sen) {
     spdlog::info("Detected sentense with {}", sen.size(), " samples");
     model->addVoice(this->params.no_context, sen);
-  });
+  };
+  sentense.setSentenceCallback(sentenceCallback);
   if (!sentense.initialize()) {
     spdlog::error("sentense initialize failed");
   }
@@ -61,7 +48,6 @@ MainWindow::MainWindow(QWidget *parent, const whisper_params &params)
     // whisper_print_usage(argc, argv, params);
     exit(0);
   }
-
   whisperCallback = [this](const string &text) {
     QMetaObject::invokeMethod(this, [this, text]() {
       string keyword = "明镜与点点";
@@ -69,18 +55,28 @@ MainWindow::MainWindow(QWidget *parent, const whisper_params &params)
       if (message != "" && message.find(keyword) == string::npos) {
         message += this->params.prompt;
         ui->queue->enqueueMessage(QString::fromStdString(message));
-        mychat->addMessage(message);
+        chat->addMessage(message);
       }
     });
   };
-
+  spdlog::info("mainwindow.h params.language is: {}", params.language);
   model = make_unique<S2T>(params, whisperCallback);
-  mychat = make_unique<Chat>(params, chatCallback);
-
   model->start();
-  mychat->start();
+
+  chatCallback = [this](const string &message, bool is_response) {
+    QMetaObject::invokeMethod(this, [this, message, is_response]() {
+      m_content.appendText(QString::fromStdString(message));
+      ui->preview->page()->runJavaScript(
+          "window.scrollTo(0, document.body.scrollHeight);");
+      if (!is_response) {
+        ui->queue->dequeueMessage();
+      }
+    });
+  };
+  chat = make_unique<Chat>(params, chatCallback);
+  chat->start();
   if (params.init_prompt != "") {
-    mychat->addMessage(params.init_prompt);
+    chat->addMessage(params.init_prompt);
   }
 }
 
@@ -89,7 +85,7 @@ MainWindow::~MainWindow() {
     sentense.stop();
   }
   model->stop();
-  mychat->stop();
+  chat->stop();
 }
 
 void MainWindow::handleClick() {
