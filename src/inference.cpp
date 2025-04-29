@@ -11,7 +11,7 @@
 #include <string>
 #include <vector>
 
-S2T::S2T(whisper_params params, Callback callback) : stopInference(false) {
+S2T::S2T(whisper_params &params, Callback callback) : stopInference(false) {
 
   whisper_callback = callback;
 

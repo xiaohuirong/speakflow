@@ -60,7 +60,7 @@ MainWindow::MainWindow(QWidget *parent, const whisper_params &params)
     });
   };
   spdlog::info("mainwindow.h params.language is: {}", params.language);
-  model = make_unique<S2T>(params, whisperCallback);
+  model = make_unique<S2T>(this->params, whisperCallback);
   model->start();
 
   chatCallback = [this](const string &message, bool is_response) {
@@ -73,7 +73,7 @@ MainWindow::MainWindow(QWidget *parent, const whisper_params &params)
       }
     });
   };
-  chat = make_unique<Chat>(params, chatCallback);
+  chat = make_unique<Chat>(this->params, chatCallback);
   chat->start();
   if (params.init_prompt != "") {
     chat->addMessage(params.init_prompt);

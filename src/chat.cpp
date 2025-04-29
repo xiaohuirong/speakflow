@@ -4,7 +4,7 @@
 #include <spdlog/spdlog.h>
 #include <thread>
 
-Chat::Chat(whisper_params params, Callback callback) : stopChat(false) {
+Chat::Chat(whisper_params &params, Callback callback) : stopChat(false) {
 
   whisper_callback = callback;
 

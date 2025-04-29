@@ -17,7 +17,7 @@ public:
     bool no_context;
   };
 
-  S2T(whisper_params params, Callback callback);
+  S2T(whisper_params &params, Callback callback);
   ~S2T();
   auto inference(bool no_context, vector<float> voice_data) -> string;
 
