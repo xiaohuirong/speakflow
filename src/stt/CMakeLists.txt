@@ -16,7 +16,7 @@ endif()
 find_package(spdlog REQUIRED)
 
 # Add source files
-set(STT_SOURCES stt.cpp common.cpp common-whisper.cpp)
+set(STT_SOURCES stt.cpp common-whisper.cpp)
 
 # Create library target
 add_library(stt STATIC ${STT_SOURCES})
