@@ -21,7 +21,7 @@ public:
     string text;
   };
 
-  Chat(whisper_params &params, Callback callback);
+  Chat(whisper_params params, Callback callback);
 
   void start();
   void stop();

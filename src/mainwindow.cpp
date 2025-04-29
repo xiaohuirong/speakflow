@@ -11,7 +11,8 @@
 #include <spdlog/spdlog.h>
 
 MainWindow::MainWindow(QWidget *parent, const whisper_params &params)
-    : QMainWindow(parent), ui(new Ui::MainWindow), params(params) {
+    : QMainWindow(parent), ui(new Ui::MainWindow), params(params),
+      sentense(params.vad_model) {
   ui->setupUi(this);
 
   monitorwindow = new MonitorWindow(this);
@@ -43,12 +44,11 @@ MainWindow::MainWindow(QWidget *parent, const whisper_params &params)
     }
   };
 
-  sentense = new Sentense(params.vad_model);
-  sentense->setSentenceCallback([this](const std::vector<float> &sen) {
+  sentense.setSentenceCallback([this](const std::vector<float> &sen) {
     spdlog::info("Detected sentense with {}", sen.size(), " samples");
     model->addVoice(this->params.no_context, sen);
   });
-  if (!sentense->initialize()) {
+  if (!sentense.initialize()) {
     spdlog::error("sentense initialize failed");
   }
 
@@ -73,8 +73,8 @@ MainWindow::MainWindow(QWidget *parent, const whisper_params &params)
     }
   };
 
-  model = new S2T(this->params, whisperCallback);
-  mychat = new Chat(this->params, chatCallback);
+  model = new S2T(params, whisperCallback);
+  mychat = new Chat(params, chatCallback);
 
   model->start();
   mychat->start();
@@ -85,7 +85,7 @@ MainWindow::MainWindow(QWidget *parent, const whisper_params &params)
 
 MainWindow::~MainWindow() {
   if (is_running) {
-    sentense->stop();
+    sentense.stop();
   }
   model->stop();
   mychat->stop();
@@ -99,11 +99,11 @@ void MainWindow::handleClick() {
     is_running = true;
     ui->clickButton->setText("停止");
     ui->statusbar->showMessage("Whisper实时记录中...");
-    sentense->start();
+    sentense.start();
   } else {
     is_running = false;
     ui->clickButton->setText("启动");
     ui->statusbar->showMessage("Whisper未启动...");
-    sentense->stop();
+    sentense.stop();
   }
 }

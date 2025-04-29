@@ -36,7 +36,7 @@ private:
   Ui::MainWindow *ui;
   whisper_params params;
 
-  Sentense *sentense;
+  Sentense sentense;
 
   Chat *mychat;
   S2T *model;
