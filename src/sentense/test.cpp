@@ -24,6 +24,8 @@ int main() {
     std::this_thread::sleep_for(std::chrono::seconds(1));
   }
 
+  cout << "end" << endl;
+
   sen.stop();
   return 0;
 }

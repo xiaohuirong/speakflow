@@ -3,18 +3,13 @@
 
 #include "chat.h"
 
-#ifdef USE_SDL_AUDIO
-#include "sdlaudio.h"
-#elif defined(USE_QT_AUDIO)
-#include "qtaudio.h"
-#endif
+#include "sentense.h"
 
 #include "document.h"
 #include "inference.h"
 #include "monitorwindow.h"
 #include "parse.h"
 #include "previewpage.h"
-#include "silero-vad-onnx.h"
 
 #include <QMainWindow>
 #include <QString>
@@ -41,24 +36,12 @@ private:
   Ui::MainWindow *ui;
   whisper_params params;
 
-#ifdef USE_SDL_AUDIO
-  audio_async *audio;
-#elif defined(USE_QT_AUDIO)
-  AudioAsync *audio;
-#endif
+  Sentense *sentense;
 
   Chat *mychat;
   S2T *model;
 
-  vector<float> pcmf32;
-  vector<float> pcmf32_new;
-
   bool is_running = false;
-
-  chrono::time_point<chrono::high_resolution_clock> t_change;
-  bool last_status = false;
-
-  QTimer *timer;
 
   Document m_content;
 
@@ -69,10 +52,7 @@ private:
 
   MonitorWindow *monitorwindow;
 
-  VadIterator vad;
-
 private slots:
   void handleClick();
-  auto running() -> int;
 };
 #endif // MAINWINDOW_H

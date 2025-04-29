@@ -21,10 +21,18 @@ Sentense::Sentense(const std::string &model_path, int sample_rate,
 Sentense::~Sentense() { stop(); }
 
 auto Sentense::initialize() -> bool {
+
+#ifdef USE_SDL_AUDIO
   if (!m_audio_capture.init(m_capture_id, m_sample_rate, m_is_microphone)) {
     std::cerr << "Failed to initialize audio capture" << std::endl;
     return false;
   }
+#elif defined(USE_QT_AUDIO)
+  if (!m_audio_capture.init(-1, WHISPER_SAMPLE_RATE, true)) {
+    std::cerr << "Failed to initialize audio capture" << std::endl;
+    return false;
+  }
+#endif
 
   return true;
 }

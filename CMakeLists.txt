@@ -4,8 +4,7 @@ project(speakflow)
 set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
 
-add_subdirectory(src/sentense/audio)
-add_subdirectory(src/sentense/vad)
+add_subdirectory(src/sentense)
 
 find_package(whisper QUIET)
 if(NOT whisper_FOUND)
@@ -67,5 +66,4 @@ target_link_libraries(
           Qt6::Widgets
           Qt6::WebEngineWidgets
           Qt6::Charts
-          audio_backend
-          vad)
+          sentense)

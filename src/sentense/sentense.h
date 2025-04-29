@@ -1,7 +1,11 @@
 // vad_processor.h
 #pragma once
 
+#ifdef USE_SDL_AUDIO
 #include "sdlaudio.h"
+#elif defined(USE_QT_AUDIO)
+#include "qtaudio.h"
+#endif
 #include "silero-vad-onnx.h"
 #include <functional>
 #include <string>
@@ -30,8 +34,12 @@ private:
   const int m_capture_id;
   const SDL_bool m_is_microphone;
 
-  // Components
+// Components
+#ifdef USE_SDL_AUDIO
   audio_async m_audio_capture;
+#elif defined(USE_QT_AUDIO)
+  AudioAsync m_audio_capture;
+#endif
   VadIterator m_vad;
   SentenceCallback m_callback;
 
