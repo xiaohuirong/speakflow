@@ -64,7 +64,8 @@ MainWindow::MainWindow(QWidget *parent, const whisper_params &params)
   spdlog::info("mainwindow.h params.language is: {}", params.language);
   set_params();
   stt = make_unique<STT>(this->cparams, this->wparams, params.model,
-                         whisperCallback);
+                         params.language, whisperCallback);
+
   stt->start();
 
   chatCallback = [this](const string &message, bool is_response) {
@@ -97,9 +98,6 @@ void MainWindow::set_params() {
   wparams.translate = params.translate;
   wparams.single_segment = !params.use_vad;
   wparams.max_tokens = params.max_tokens;
-  wparams.language = params.language.c_str();
-  spdlog::info("params.language is: {}", params.language);
-  spdlog::info("wparams.language is: {}", wparams.language);
   wparams.n_threads = params.n_threads;
   wparams.beam_search.beam_size = params.beam_size;
 

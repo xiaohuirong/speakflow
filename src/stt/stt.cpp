@@ -1,32 +1,36 @@
-#include "common-whisper.h"
 #include "stt.h"
+#include "common-whisper.h"
 
-#include <cstdint>
-#include <cstdio>
-#include <fstream>
 #include <print>
+#include <spdlog/common.h>
 #include <spdlog/spdlog.h>
 #include <string>
+#include <utility>
 #include <vector>
 #include <whisper.h>
 
 STT::STT(whisper_context_params &cparams, whisper_full_params &wparams,
-         string path_model, Callback callback)
-    : stopInference(false), whisper_callback(callback), cparams(cparams),
-      wparams(wparams) {
+         string path_model, string language, Callback callback)
+    : stopInference(false), whisper_callback(std::move(callback)),
+      cparams(cparams), path_model(std::move(path_model)),
+      language(std::move(language)), wparams(wparams) {
 
-  ctx = whisper_init_from_file_with_params(path_model.c_str(), cparams);
+  // wparams.language is just a pointer!
+  this->wparams.language = this->language.c_str();
+  spdlog::info("STT: wparams.language is {}", this->wparams.language);
+  ctx = whisper_init_from_file_with_params(this->path_model.c_str(),
+                                           this->cparams);
 
-  // if (!whisper_is_multilingual(ctx)) {
-  //   if (params.language != "en" || params.translate) {
-  //     params.language = "en";
-  //     params.translate = false;
-  //     println(stderr,
-  //             "{}: WARNING: model is not multilingual, ignoring language "
-  //             "and translation options",
-  //             __func__);
-  //   }
-  // }
+  if (!whisper_is_multilingual(ctx)) {
+    if (this->language != "en" || this->wparams.translate) {
+      this->language = "en";
+      this->wparams.translate = false;
+      println(stderr,
+              "{}: WARNING: model is not multilingual, ignoring language "
+              "and translation options",
+              __func__);
+    }
+  }
 }
 
 STT::~STT() {
@@ -86,13 +90,13 @@ void STT::stop() {
   processThread.join();
 }
 
-static ofstream fout;
-
 // duration = (t_last - t_start).count()
 auto STT::inference(bool no_context, vector<float> pcmf32) -> string
 // run the inference
 {
   string result;
+  spdlog::info("inference language is {}", language);
+  spdlog::info("inference wparams.language is {}", wparams.language);
 
   wparams.prompt_tokens = no_context ? nullptr : prompt_tokens.data();
   wparams.prompt_n_tokens = no_context ? 0 : prompt_tokens.size();

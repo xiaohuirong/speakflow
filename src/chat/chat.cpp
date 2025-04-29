@@ -3,11 +3,12 @@
 #include <print>
 #include <spdlog/spdlog.h>
 #include <thread>
+#include <utility>
 
 Chat::Chat(string url, string key, string model, int32_t timeout, string system,
            Callback callback)
-    : stopChat(false), key(key), model(model), url(url), timeout(timeout),
-      system(system), whisper_callback(callback) {
+    : stopChat(false), key(key), model(std::move(model)), url(url),
+      timeout(timeout), system(system), whisper_callback(std::move(callback)) {
 
   oai = new OpenAI(url);
 

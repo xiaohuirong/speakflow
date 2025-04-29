@@ -17,7 +17,8 @@ public:
   };
 
   STT(whisper_context_params &cparams, whisper_full_params &wparams,
-      string path_model, Callback callback);
+      string path_model, string language, Callback callback);
+
   ~STT();
   auto inference(bool no_context, vector<float> voice_data) -> string;
 
@@ -39,6 +40,8 @@ private:
   thread processThread;
 
   whisper_full_params wparams;
+  string language;
+  string path_model;
   int n_iter = 0;
   whisper_context_params cparams;
   whisper_context *ctx;
