@@ -1,5 +1,4 @@
 #pragma once
-#include "parse.h"
 #include <condition_variable>
 #include <functional>
 #include <queue>
@@ -17,7 +16,8 @@ public:
     bool no_context;
   };
 
-  S2T(whisper_params &params, Callback callback);
+  S2T(whisper_context_params &cparams, whisper_full_params &wparams,
+      string path_model, Callback callback);
   ~S2T();
   auto inference(bool no_context, vector<float> voice_data) -> string;
 
@@ -40,7 +40,7 @@ private:
 
   whisper_full_params wparams;
   int n_iter = 0;
-  whisper_context_params cparams = whisper_context_default_params();
+  whisper_context_params cparams;
   whisper_context *ctx;
 
   vector<whisper_token> prompt_tokens;

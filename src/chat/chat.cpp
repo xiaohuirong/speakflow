@@ -4,23 +4,21 @@
 #include <spdlog/spdlog.h>
 #include <thread>
 
-Chat::Chat(whisper_params &params, Callback callback) : stopChat(false) {
+Chat::Chat(string url, string key, string model, int32_t timeout, string system,
+           Callback callback)
+    : stopChat(false), key(key), model(model), url(url), timeout(timeout),
+      system(system), whisper_callback(callback) {
 
-  whisper_callback = callback;
-
-  oai = new OpenAI(params.url);
-
-  key = params.token;
-  model = params.llm;
+  oai = new OpenAI(url);
 
   if (!oai->auth.SetKey(key)) {
     spdlog::error("auth failed!");
   }
 
-  oai->auth.SetMaxTimeout(params.timeout);
+  oai->auth.SetMaxTimeout(timeout);
 
-  if (params.system != "") {
-    if (!convo.SetSystemData(params.system)) {
+  if (system != "") {
+    if (!convo.SetSystemData(system)) {
       spdlog::error("set system data failed");
     }
   }

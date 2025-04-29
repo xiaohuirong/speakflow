@@ -36,6 +36,9 @@ private:
   using WhisperCallback = std::function<void(const std::string &)>;
 
   whisper_params params;
+  whisper_full_params wparams;
+  whisper_context_params cparams;
+
   Sentense sentense;
   bool is_running = false;
   Document m_content;
@@ -49,6 +52,8 @@ private:
   ChatCallback chatCallback;
   WhisperCallback whisperCallback;
   SentenceCallback sentenceCallback;
+
+  void set_params();
 
 private slots:
   void handleClick();

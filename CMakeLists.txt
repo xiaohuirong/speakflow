@@ -5,31 +5,8 @@ set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
 
 add_subdirectory(src/sentense)
-
-find_package(whisper QUIET)
-if(NOT whisper_FOUND)
-  message(STATUS "whisper not found, using submodule in dep/whisper")
-  set(GGML_CUDA
-      1
-      CACHE BOOL "Enable CUDA for GGML")
-  add_subdirectory(dep/whisper)
-  set(WHISPER_LIB whisper)
-  set(WHISPER_INCLUDE_DIR dep/whisper/include)
-else()
-  set(WHISPER_LIB whisper)
-  set(WHISPER_INCLUDE_DIR ${whisper_INCLUDE_DIRS})
-endif()
-
-find_package(liboai QUIET)
-if(NOT liboai_FOUND)
-  message(STATUS "liboai not found, using submodule in dep/liboai")
-  add_subdirectory(dep/liboai)
-  set(LIBOAI_LIB oai)
-  set(LIBOAI_INCLUDE_DIR dep/liboai/liboai/include)
-else()
-  set(LIBOAI_LIB oai)
-  set(LIBOAI_INCLUDE_DIR ${liboai_INCLUDE_DIRS})
-endif()
+add_subdirectory(src/chat)
+add_subdirectory(src/stt)
 
 # Find CLI11
 find_package(CLI11 QUIET)
@@ -54,16 +31,15 @@ set(CMAKE_AUTORCC ON)
 set(CMAKE_AUTOMOC ON)
 
 add_executable(${PROJECT_NAME} ${SOURCES} ${UI_HEADERS} ${MOC_HEADERS})
-target_include_directories(
-  ${PROJECT_NAME} PRIVATE inc ${CMAKE_BINARY_DIR} ${WHISPER_INCLUDE_DIR}
-                          ${LIBOAI_INCLUDE_DIR} ${CLI11_INCLUDE_DIR})
+target_include_directories(${PROJECT_NAME} PRIVATE inc ${CMAKE_BINARY_DIR}
+                                                   ${CLI11_INCLUDE_DIR})
 target_link_libraries(
   ${PROJECT_NAME}
-  PRIVATE ${WHISPER_LIB}
-          ${LIBOAI_LIB}
-          spdlog
+  PRIVATE spdlog
           fmt
           Qt6::Widgets
           Qt6::WebEngineWidgets
           Qt6::Charts
-          sentense)
+          sentense
+          stt
+          chat)

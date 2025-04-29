@@ -1,7 +1,5 @@
 #include "inference.h"
 #include "common-whisper.h"
-#include "mylog.h"
-#include "parse.h"
 
 #include <cstdint>
 #include <cstdio>
@@ -10,41 +8,25 @@
 #include <spdlog/spdlog.h>
 #include <string>
 #include <vector>
+#include <whisper.h>
 
-S2T::S2T(whisper_params &params, Callback callback) : stopInference(false) {
+S2T::S2T(whisper_context_params &cparams, whisper_full_params &wparams,
+         string path_model, Callback callback)
+    : stopInference(false), whisper_callback(callback), cparams(cparams),
+      wparams(wparams) {
 
-  whisper_callback = callback;
+  ctx = whisper_init_from_file_with_params(path_model.c_str(), cparams);
 
-  cparams.use_gpu = params.use_gpu;
-  cparams.flash_attn = params.flash_attn;
-  ctx = whisper_init_from_file_with_params(params.model.c_str(), cparams);
-
-  print_process_info(params, ctx);
-
-  wparams = whisper_full_default_params(params.beam_size > 1
-                                            ? WHISPER_SAMPLING_BEAM_SEARCH
-                                            : WHISPER_SAMPLING_GREEDY);
-
-  wparams.print_progress = false;
-  wparams.print_special = params.print_special;
-  wparams.print_realtime = false;
-  wparams.print_timestamps = !params.no_timestamps;
-  wparams.translate = params.translate;
-  wparams.single_segment = !params.use_vad;
-  wparams.max_tokens = params.max_tokens;
-  wparams.language = params.language.c_str();
-  spdlog::info("params.language is: {}", params.language);
-  spdlog::info("wparams.language is: {}", wparams.language);
-  wparams.n_threads = params.n_threads;
-  wparams.beam_search.beam_size = params.beam_size;
-
-  wparams.audio_ctx = params.audio_ctx;
-
-  wparams.tdrz_enable = params.tinydiarize; // [TDRZ]
-
-  // disable temperature fallback
-  // wparams.temperature_inc  = -1.0f;
-  wparams.temperature_inc = params.no_fallback ? 0.0f : wparams.temperature_inc;
+  // if (!whisper_is_multilingual(ctx)) {
+  //   if (params.language != "en" || params.translate) {
+  //     params.language = "en";
+  //     params.translate = false;
+  //     println(stderr,
+  //             "{}: WARNING: model is not multilingual, ignoring language "
+  //             "and translation options",
+  //             __func__);
+  //   }
+  // }
 }
 
 S2T::~S2T() {

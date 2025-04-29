@@ -1,7 +1,6 @@
 #pragma once
 
 #include "liboai.h"
-#include "parse.h"
 
 #include <condition_variable>
 #include <functional>
@@ -21,7 +20,8 @@ public:
     string text;
   };
 
-  Chat(whisper_params &params, Callback callback);
+  Chat(string url, string key, string model, int32_t timeout, string system,
+       Callback callback);
 
   void start();
   void stop();
@@ -42,7 +42,12 @@ private:
   OpenAI *oai;
   Conversation convo;
   string key;
+  string url;
   int message_count = 0;
 
   string model;
+
+  int32_t timeout;
+
+  string system;
 };
