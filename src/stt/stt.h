@@ -7,7 +7,7 @@
 
 using namespace std;
 
-class S2T {
+class STT {
 public:
   using Callback = function<void(const string &)>;
 
@@ -16,9 +16,9 @@ public:
     bool no_context;
   };
 
-  S2T(whisper_context_params &cparams, whisper_full_params &wparams,
+  STT(whisper_context_params &cparams, whisper_full_params &wparams,
       string path_model, Callback callback);
-  ~S2T();
+  ~STT();
   auto inference(bool no_context, vector<float> voice_data) -> string;
 
   void start();

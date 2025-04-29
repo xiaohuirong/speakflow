@@ -1,5 +1,4 @@
 #include "mainwindow.h"
-#include "inference.h"
 #include "monitorwindow.h"
 #include "previewpage.h"
 #include "qpushbutton.h"
@@ -37,7 +36,7 @@ MainWindow::MainWindow(QWidget *parent, const whisper_params &params)
 
   sentenceCallback = [this](const vector<float> &sen) {
     spdlog::info("Detected sentense with {}", sen.size(), " samples");
-    model->addVoice(this->params.no_context, sen);
+    stt->addVoice(this->params.no_context, sen);
   };
   sentense.setSentenceCallback(sentenceCallback);
   if (!sentense.initialize()) {
@@ -64,9 +63,9 @@ MainWindow::MainWindow(QWidget *parent, const whisper_params &params)
   };
   spdlog::info("mainwindow.h params.language is: {}", params.language);
   set_params();
-  model = make_unique<S2T>(this->cparams, this->wparams, params.model,
-                           whisperCallback);
-  model->start();
+  stt = make_unique<STT>(this->cparams, this->wparams, params.model,
+                         whisperCallback);
+  stt->start();
 
   chatCallback = [this](const string &message, bool is_response) {
     QMetaObject::invokeMethod(this, [this, message, is_response]() {
@@ -117,7 +116,7 @@ MainWindow::~MainWindow() {
   if (is_running) {
     sentense.stop();
   }
-  model->stop();
+  stt->stop();
   chat->stop();
 }
 

@@ -1,5 +1,5 @@
-#include "inference.h"
 #include "common-whisper.h"
+#include "stt.h"
 
 #include <cstdint>
 #include <cstdio>
@@ -10,7 +10,7 @@
 #include <vector>
 #include <whisper.h>
 
-S2T::S2T(whisper_context_params &cparams, whisper_full_params &wparams,
+STT::STT(whisper_context_params &cparams, whisper_full_params &wparams,
          string path_model, Callback callback)
     : stopInference(false), whisper_callback(callback), cparams(cparams),
       wparams(wparams) {
@@ -29,14 +29,14 @@ S2T::S2T(whisper_context_params &cparams, whisper_full_params &wparams,
   // }
 }
 
-S2T::~S2T() {
+STT::~STT() {
   whisper_print_timings(ctx);
   whisper_free(ctx);
 }
 
-void S2T::start() { processThread = thread(&S2T::processVoices, this); }
+void STT::start() { processThread = thread(&STT::processVoices, this); }
 
-void S2T::processVoices() {
+void STT::processVoices() {
   while (true) {
     Voice voice = {.voice_data = vector<float>(), .no_context = false};
 
@@ -46,7 +46,7 @@ void S2T::processVoices() {
       spdlog::info(__func__, "pick a voice");
 
       if (stopInference) {
-        spdlog::info(__func__, "S2T stop then return");
+        spdlog::info(__func__, "STT stop then return");
         return;
       }
 
@@ -69,7 +69,7 @@ void S2T::processVoices() {
   }
 }
 
-void S2T::addVoice(bool no_context, vector<float> voice_data) {
+void STT::addVoice(bool no_context, vector<float> voice_data) {
   {
     lock_guard<mutex> lock(queueMutex);
     voiceQueue.push({voice_data, no_context});
@@ -77,7 +77,7 @@ void S2T::addVoice(bool no_context, vector<float> voice_data) {
   cv.notify_one();
 }
 
-void S2T::stop() {
+void STT::stop() {
   {
     lock_guard<mutex> lock(queueMutex);
     stopInference = true;
@@ -89,7 +89,7 @@ void S2T::stop() {
 static ofstream fout;
 
 // duration = (t_last - t_start).count()
-auto S2T::inference(bool no_context, vector<float> pcmf32) -> string
+auto STT::inference(bool no_context, vector<float> pcmf32) -> string
 // run the inference
 {
   string result;

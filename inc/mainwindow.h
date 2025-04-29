@@ -3,11 +3,11 @@
 
 #include "chat.h"
 #include "document.h"
-#include "inference.h"
 #include "monitorwindow.h"
 #include "parse.h"
 #include "previewpage.h"
 #include "sentense.h"
+#include "stt.h"
 
 #include <QMainWindow>
 #include <QString>
@@ -46,7 +46,7 @@ private:
   unique_ptr<Ui::MainWindow> ui;
   unique_ptr<PreviewPage> page;
   unique_ptr<Chat> chat;
-  unique_ptr<S2T> model;
+  unique_ptr<STT> stt;
   unique_ptr<MonitorWindow> monitorwindow;
 
   ChatCallback chatCallback;
