@@ -7,16 +7,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED True)
 add_subdirectory(src/sentense)
 add_subdirectory(src/chat)
 add_subdirectory(src/stt)
-
-# Find CLI11
-find_package(CLI11 QUIET)
-if(NOT CLI11_FOUND)
-  message(STATUS "CLI11 not found, using submodule in dep/cli11")
-  add_subdirectory(dep/cli11)
-  set(CLI11_INCLUDE_DIR dep/cli11/include)
-else()
-  set(CLI11_INCLUDE_DIR ${CLI11_INCLUDE_DIRS})
-endif()
+add_subdirectory(src/parse)
 
 find_package(Qt6 REQUIRED COMPONENTS Widgets WebEngineWidgets Charts)
 find_package(spdlog REQUIRED)
@@ -31,8 +22,7 @@ set(CMAKE_AUTORCC ON)
 set(CMAKE_AUTOMOC ON)
 
 add_executable(${PROJECT_NAME} ${SOURCES} ${UI_HEADERS} ${MOC_HEADERS})
-target_include_directories(${PROJECT_NAME} PRIVATE inc ${CMAKE_BINARY_DIR}
-                                                   ${CLI11_INCLUDE_DIR})
+target_include_directories(${PROJECT_NAME} PRIVATE inc ${CMAKE_BINARY_DIR})
 target_link_libraries(
   ${PROJECT_NAME}
   PRIVATE spdlog
@@ -42,4 +32,5 @@ target_link_libraries(
           Qt6::Charts
           sentense
           stt
-          chat)
+          chat
+          parse)
