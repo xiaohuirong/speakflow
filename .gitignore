@@ -2,3 +2,5 @@ build
 .cache
 speakflow.toml
 models
+*.wav
+src/sentense/wav
