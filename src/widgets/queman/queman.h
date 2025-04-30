@@ -1,10 +1,7 @@
 #ifndef QUEUEMANAGERWIDGET_H
 #define QUEUEMANAGERWIDGET_H
 
-#include <QHBoxLayout>
-#include <QInputDialog>
 #include <QListWidget>
-#include <QPushButton>
 #include <QVBoxLayout>
 #include <QWidget>
 #include <functional>
@@ -39,7 +36,7 @@ public:
   void setItems(const QList<T> &items);
   [[nodiscard]] auto getItems() const -> QList<T>;
   void setMergeFunction(std::function<T(const T &, const T &)> func);
-  void setDisplayFunction(std::function<QString(const T &)> func); // 新增
+  void setDisplayFunction(std::function<QString(const T &)> func);
 
   // Implement pure virtual functions
   void clear() override;
@@ -55,10 +52,11 @@ public:
   void deleteSelected() override;
   void clearQueue() override;
 
+  QListWidget *getListWidget() const { return listWidget; }
+
 private:
   void setupUI();
-  void connectSignals();
-  void updateListWidget();
+  void updateListWidget(); // Add this declaration
   [[nodiscard]] inline auto itemToString(const T &item) const -> QString {
     if (displayFunction) {
       return displayFunction(item);
@@ -69,10 +67,9 @@ private:
   QListWidget *listWidget{};
   QList<T> queue;
   std::function<T(const T &, const T &)> mergeFunction;
-  std::function<QString(const T &)> displayFunction; // 新增
+  std::function<QString(const T &)> displayFunction;
 };
 
-// 特化声明
 template <>
 inline auto QueueManagerWidget<QString>::itemToString(const QString &item) const
     -> QString {
@@ -82,12 +79,10 @@ inline auto QueueManagerWidget<QString>::itemToString(const QString &item) const
   return item;
 }
 
-// 实现部分放在头文件中
 template <typename T>
 QueueManagerWidget<T>::QueueManagerWidget(QWidget *parent)
     : QueueManagerBase(parent) {
   setupUI();
-  connectSignals();
 }
 
 template <typename T>
@@ -206,91 +201,6 @@ template <typename T> void QueueManagerWidget<T>::setupUI() {
   auto *mainLayout = new QVBoxLayout(this);
   listWidget = new QListWidget(this);
   mainLayout->addWidget(listWidget);
-
-  auto *buttonLayout = new QHBoxLayout();
-
-  auto *deleteSelectedBtn = new QPushButton(tr("Delete Selected"), this);
-  auto *deleteAtPosBtn = new QPushButton(tr("Delete At Position"), this);
-  auto *mergeBtn = new QPushButton(tr("Merge Items"), this);
-  auto *clearBtn = new QPushButton(tr("Clear Queue"), this);
-  auto *moveBtn = new QPushButton(tr("Move Item"), this);
-  auto *moveToFrontBtn = new QPushButton(tr("Move to Front"), this);
-  auto *insertBtn = new QPushButton(tr("Insert Item"), this);
-  auto *appendBtn = new QPushButton(tr("Append Item"), this);
-
-  buttonLayout->addWidget(deleteSelectedBtn);
-  buttonLayout->addWidget(deleteAtPosBtn);
-  buttonLayout->addWidget(mergeBtn);
-  buttonLayout->addWidget(clearBtn);
-  buttonLayout->addWidget(moveBtn);
-  buttonLayout->addWidget(moveToFrontBtn);
-  buttonLayout->addWidget(insertBtn);
-  buttonLayout->addWidget(appendBtn);
-
-  mainLayout->addLayout(buttonLayout);
-
-  connect(deleteSelectedBtn, &QPushButton::clicked, this,
-          &QueueManagerWidget::deleteSelected);
-  connect(deleteAtPosBtn, &QPushButton::clicked, [this]() {
-    bool ok;
-    int index = QInputDialog::getInt(this, tr("Delete Item"),
-                                     tr("Enter position to delete:"), 0, 0,
-                                     queue.size() - 1, 1, &ok);
-    if (ok)
-      deleteAtPosition(index);
-  });
-  connect(mergeBtn, &QPushButton::clicked, [this]() {
-    bool ok;
-    int start = QInputDialog::getInt(this, tr("Merge Items"),
-                                     tr("Start from position:"), 0, 0,
-                                     queue.size() - 1, 1, &ok);
-    if (!ok)
-      return;
-
-    int count = QInputDialog::getInt(this, tr("Merge Items"),
-                                     tr("Number of items to merge:"), 2, 2,
-                                     queue.size() - start, 1, &ok);
-    if (ok)
-      mergeItems(start, count);
-  });
-  connect(clearBtn, &QPushButton::clicked, this,
-          &QueueManagerWidget::clearQueue);
-  connect(moveBtn, &QPushButton::clicked, [this]() {
-    bool ok;
-    int distance = QInputDialog::getInt(
-        this, tr("Move Item"), tr("Move distance (negative for backward):"), 0,
-        -queue.size() + 1, queue.size() - 1, 1, &ok);
-    if (ok)
-      moveItem(listWidget->currentRow(), distance);
-  });
-  connect(moveToFrontBtn, &QPushButton::clicked,
-          [this]() { moveToFront(listWidget->currentRow()); });
-  connect(insertBtn, &QPushButton::clicked, [this]() {
-    bool ok;
-    int index = QInputDialog::getInt(this, tr("Insert Item"),
-                                     tr("Enter position to insert:"), 0, 0,
-                                     queue.size(), 1, &ok);
-    if (!ok)
-      return;
-
-    QString value = QInputDialog::getText(this, tr("Insert Item"),
-                                          tr("Enter value to insert:"),
-                                          QLineEdit::Normal, "", &ok);
-    if (ok)
-      insertAtPosition(index, value);
-  });
-  connect(appendBtn, &QPushButton::clicked, [this]() {
-    bool ok;
-    QString value = QInputDialog::getText(this, tr("Append Item"),
-                                          tr("Enter value to append:"),
-                                          QLineEdit::Normal, "", &ok);
-    if (ok)
-      append(value);
-  });
-}
-
-template <typename T> void QueueManagerWidget<T>::connectSignals() {
-  // Additional signal connections if needed
 }
 
 template <typename T> void QueueManagerWidget<T>::updateListWidget() {
