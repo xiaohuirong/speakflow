@@ -26,6 +26,20 @@ public:
   void stop();
   void addVoice(bool no_context, vector<float> voice_data);
 
+  // Queue management functions
+  void clearQueue();
+  auto removeFromQueue(size_t index) -> bool;
+  auto mergeInQueue(size_t startIndex, size_t count) -> bool;
+  auto moveInQueue(size_t index, int distance) -> bool;
+  auto moveToFront(size_t index) -> bool;
+  auto moveToBack(size_t index) -> bool;
+
+  // Manual trigger control
+  void setAutoProcessing(bool autoProcess);
+  auto processNext() -> bool;
+  auto processAt(size_t index) -> bool;
+  auto queueSize() -> size_t;
+
 private:
   void processVoices();
 
@@ -33,6 +47,8 @@ private:
 
   queue<Voice> voiceQueue; // Message queue
   bool stopInference;      // Whether to stop the voice system
+  int autoProcessing =
+      -1; // -1 : infinity time, 0: not process, > 0: process time
 
   mutex queueMutex;      // Mutex to protect the message queue
   condition_variable cv; // Condition variable for thread synchronization
