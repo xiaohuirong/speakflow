@@ -21,6 +21,8 @@ public:
   virtual void mergeItems(int start, int count) = 0;
   virtual void moveItem(int index, int distance) = 0;
   virtual void moveToFront(int index) = 0;
+  virtual void insertAtPosition(int index, const QString &value) = 0; // 新增
+  virtual void append(const QString &value) = 0;                      // 新增
 
 public slots:
   virtual void deleteSelected() = 0;
@@ -46,6 +48,8 @@ public:
   void mergeItems(int start, int count) override;
   void moveItem(int index, int distance) override;
   void moveToFront(int index) override;
+  void insertAtPosition(int index, const QString &value) override; // 新增
+  void append(const QString &value) override;                      // 新增
 
   void deleteSelected() override;
   void clearQueue() override;
@@ -162,6 +166,21 @@ template <typename T> void QueueManagerWidget<T>::moveToFront(int index) {
   }
 }
 
+template <typename T>
+void QueueManagerWidget<T>::insertAtPosition(int index, const QString &value) {
+  if (index >= 0 && index <= queue.size()) {
+    queue.insert(index, value);
+    updateListWidget();
+    emit queueChanged();
+  }
+}
+
+template <typename T> void QueueManagerWidget<T>::append(const QString &value) {
+  queue.append(value);
+  updateListWidget();
+  emit queueChanged();
+}
+
 template <typename T> void QueueManagerWidget<T>::deleteSelected() {
   deleteAtPosition(listWidget->currentRow());
 }
@@ -181,6 +200,8 @@ template <typename T> void QueueManagerWidget<T>::setupUI() {
   auto *clearBtn = new QPushButton(tr("Clear Queue"), this);
   auto *moveBtn = new QPushButton(tr("Move Item"), this);
   auto *moveToFrontBtn = new QPushButton(tr("Move to Front"), this);
+  auto *insertBtn = new QPushButton(tr("Insert Item"), this); // 新增
+  auto *appendBtn = new QPushButton(tr("Append Item"), this); // 新增
 
   buttonLayout->addWidget(deleteSelectedBtn);
   buttonLayout->addWidget(deleteAtPosBtn);
@@ -188,6 +209,8 @@ template <typename T> void QueueManagerWidget<T>::setupUI() {
   buttonLayout->addWidget(clearBtn);
   buttonLayout->addWidget(moveBtn);
   buttonLayout->addWidget(moveToFrontBtn);
+  buttonLayout->addWidget(insertBtn); // 新增
+  buttonLayout->addWidget(appendBtn); // 新增
 
   mainLayout->addLayout(buttonLayout);
 
@@ -227,6 +250,28 @@ template <typename T> void QueueManagerWidget<T>::setupUI() {
   });
   connect(moveToFrontBtn, &QPushButton::clicked,
           [this]() { moveToFront(listWidget->currentRow()); });
+  connect(insertBtn, &QPushButton::clicked, [this]() { // 新增
+    bool ok;
+    int index = QInputDialog::getInt(this, tr("Insert Item"),
+                                     tr("Enter position to insert:"), 0, 0,
+                                     queue.size(), 1, &ok);
+    if (!ok)
+      return;
+
+    QString value = QInputDialog::getText(this, tr("Insert Item"),
+                                          tr("Enter value to insert:"),
+                                          QLineEdit::Normal, "", &ok);
+    if (ok)
+      insertAtPosition(index, value);
+  });
+  connect(appendBtn, &QPushButton::clicked, [this]() { // 新增
+    bool ok;
+    QString value = QInputDialog::getText(this, tr("Append Item"),
+                                          tr("Enter value to append:"),
+                                          QLineEdit::Normal, "", &ok);
+    if (ok)
+      append(value);
+  });
 }
 
 template <typename T> void QueueManagerWidget<T>::connectSignals() {
