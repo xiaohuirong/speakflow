@@ -1,11 +1,11 @@
 #ifndef QUEUEMANAGERWIDGET_H
 #define QUEUEMANAGERWIDGET_H
 
-#include <QListWidget>
-#include <QVBoxLayout>
 #include <QHBoxLayout>
 #include <QLabel>
+#include <QListWidget>
 #include <QPushButton>
+#include <QVBoxLayout>
 #include <QWidget>
 #include <functional>
 
@@ -216,7 +216,7 @@ template <typename T> void QueueManagerWidget<T>::setupUI() {
     for (int i = 0; i < listWidget->count(); ++i) {
       QListWidgetItem *item = listWidget->item(i);
       QWidget *widget = listWidget->itemWidget(item);
-      QLabel *label = widget->findChild<QLabel *>();
+      auto *label = widget->findChild<QLabel *>();
       if (label) {
         QString text = label->text();
         for (const T &originalItem : queue) {
@@ -235,19 +235,19 @@ template <typename T> void QueueManagerWidget<T>::setupUI() {
 template <typename T> void QueueManagerWidget<T>::updateListWidget() {
   listWidget->clear();
   for (int i = 0; i < queue.size(); ++i) {
-    QWidget *itemWidget = new QWidget();
-    QHBoxLayout *layout = new QHBoxLayout(itemWidget);
+    auto *itemWidget = new QWidget();
+    auto *layout = new QHBoxLayout(itemWidget);
     layout->setContentsMargins(4, 0, 4, 0);
 
-    QLabel *label = new QLabel(itemToString(queue[i]));
-    QPushButton *deleteBtn = new QPushButton("删除");
+    auto *label = new QLabel(itemToString(queue[i]));
+    auto *deleteBtn = new QPushButton("删除");
     deleteBtn->setFixedSize(50, 24);
 
     layout->addWidget(label);
     layout->addStretch();
     layout->addWidget(deleteBtn);
 
-    QListWidgetItem *item = new QListWidgetItem();
+    auto *item = new QListWidgetItem();
     listWidget->addItem(item);
     listWidget->setItemWidget(item, itemWidget);
     item->setSizeHint(itemWidget->sizeHint());
