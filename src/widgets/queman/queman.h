@@ -3,6 +3,9 @@
 
 #include <QListWidget>
 #include <QVBoxLayout>
+#include <QHBoxLayout>
+#include <QLabel>
+#include <QPushButton>
 #include <QWidget>
 #include <functional>
 
@@ -52,11 +55,13 @@ public:
   void deleteSelected() override;
   void clearQueue() override;
 
-  QListWidget *getListWidget() const { return listWidget; }
+  [[nodiscard]] auto getListWidget() const -> QListWidget * {
+    return listWidget;
+  }
 
 private:
   void setupUI();
-  void updateListWidget(); // Add this declaration
+  void updateListWidget();
   [[nodiscard]] inline auto itemToString(const T &item) const -> QString {
     if (displayFunction) {
       return displayFunction(item);
@@ -201,12 +206,61 @@ template <typename T> void QueueManagerWidget<T>::setupUI() {
   auto *mainLayout = new QVBoxLayout(this);
   listWidget = new QListWidget(this);
   mainLayout->addWidget(listWidget);
+
+  listWidget->setSelectionMode(QAbstractItemView::SingleSelection);
+  listWidget->setDragDropMode(QAbstractItemView::InternalMove);
+  listWidget->setDefaultDropAction(Qt::MoveAction);
+
+  connect(listWidget->model(), &QAbstractItemModel::rowsMoved, this, [this]() {
+    QList<T> newQueue;
+    for (int i = 0; i < listWidget->count(); ++i) {
+      QListWidgetItem *item = listWidget->item(i);
+      QWidget *widget = listWidget->itemWidget(item);
+      QLabel *label = widget->findChild<QLabel *>();
+      if (label) {
+        QString text = label->text();
+        for (const T &originalItem : queue) {
+          if (itemToString(originalItem) == text) {
+            newQueue.append(originalItem);
+            break;
+          }
+        }
+      }
+    }
+    queue = newQueue;
+    emit queueChanged();
+  });
 }
 
 template <typename T> void QueueManagerWidget<T>::updateListWidget() {
   listWidget->clear();
-  for (const T &item : queue) {
-    listWidget->addItem(itemToString(item));
+  for (int i = 0; i < queue.size(); ++i) {
+    QWidget *itemWidget = new QWidget();
+    QHBoxLayout *layout = new QHBoxLayout(itemWidget);
+    layout->setContentsMargins(4, 0, 4, 0);
+
+    QLabel *label = new QLabel(itemToString(queue[i]));
+    QPushButton *deleteBtn = new QPushButton("删除");
+    deleteBtn->setFixedSize(50, 24);
+
+    layout->addWidget(label);
+    layout->addStretch();
+    layout->addWidget(deleteBtn);
+
+    QListWidgetItem *item = new QListWidgetItem();
+    listWidget->addItem(item);
+    listWidget->setItemWidget(item, itemWidget);
+    item->setSizeHint(itemWidget->sizeHint());
+
+    connect(deleteBtn, &QPushButton::clicked, this, [this, deleteBtn]() {
+      for (int i = 0; i < listWidget->count(); ++i) {
+        QWidget *w = listWidget->itemWidget(listWidget->item(i));
+        if (w && w->findChild<QPushButton *>() == deleteBtn) {
+          deleteAtPosition(i);
+          break;
+        }
+      }
+    });
   }
 }
 
