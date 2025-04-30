@@ -231,19 +231,41 @@ template <typename T> void QueueManagerWidget<T>::mergeSelected() {
     return;
   }
 
-  // Sort indices in ascending order
+  // Sort indices in descending order for easier removal
   QList<int> indices;
   for (QListWidgetItem *item : selectedItems) {
     indices.append(listWidget->row(item));
   }
-  std::ranges::sort(indices);
+  std::ranges::sort(indices, std::greater<int>());
 
-  // Get the first index and count of selected items
-  int firstIndex = indices.first();
-  int count = indices.size();
+  if (!mergeFunction) {
+    return;
+  }
 
-  // Merge the items
-  mergeItems(firstIndex, count);
+  // Get the first item (will be at the position of the highest index after
+  // sorting)
+  T merged = queue[indices.last()];
+
+  // Merge all other selected items into it
+  for (int i = indices.size() - 2; i >= 0; --i) {
+    int index = indices[i];
+    merged = mergeFunction(merged, queue[index]);
+  }
+
+  // Remove all selected items except the first one (which we'll replace with
+  // merged)
+  int firstIndex = indices.last();
+  for (int index : indices) {
+    if (index != firstIndex) {
+      queue.removeAt(index);
+    }
+  }
+
+  // Replace the first selected item with the merged result
+  queue[firstIndex] = merged;
+
+  updateListWidget();
+  emit queueChanged();
 }
 
 template <typename T> void QueueManagerWidget<T>::clearQueue() { clear(); }
