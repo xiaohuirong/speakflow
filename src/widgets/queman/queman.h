@@ -7,6 +7,7 @@
 #include <QPushButton>
 #include <QVBoxLayout>
 #include <QWidget>
+#include <algorithm>
 #include <functional>
 
 class QueueManagerBase : public QWidget {
@@ -26,6 +27,7 @@ public:
 
 public slots:
   virtual void deleteSelected() = 0;
+  virtual void mergeSelected() = 0;
   virtual void clearQueue() = 0;
 
 signals:
@@ -53,6 +55,7 @@ public:
   void append(const QString &value) override;
 
   void deleteSelected() override;
+  void mergeSelected() override;
   void clearQueue() override;
 
   [[nodiscard]] auto getListWidget() const -> QListWidget * {
@@ -197,7 +200,50 @@ template <typename T> void QueueManagerWidget<T>::append(const QString &value) {
 }
 
 template <typename T> void QueueManagerWidget<T>::deleteSelected() {
-  deleteAtPosition(listWidget->currentRow());
+  QList<QListWidgetItem *> selectedItems = listWidget->selectedItems();
+  if (selectedItems.isEmpty()) {
+    // If nothing is selected, delete the current row (backward compatibility)
+    deleteAtPosition(listWidget->currentRow());
+    return;
+  }
+
+  // Sort indices in descending order to avoid shifting issues
+  QList<int> indices;
+  for (QListWidgetItem *item : selectedItems) {
+    indices.append(listWidget->row(item));
+  }
+  std::sort(indices.begin(), indices.end(), std::greater<int>());
+
+  for (int index : indices) {
+    if (index >= 0 && index < queue.size()) {
+      queue.removeAt(index);
+    }
+  }
+
+  updateListWidget();
+  emit queueChanged();
+}
+
+template <typename T> void QueueManagerWidget<T>::mergeSelected() {
+  QList<QListWidgetItem *> selectedItems = listWidget->selectedItems();
+  if (selectedItems.size() < 2) {
+    // Need at least 2 items to merge
+    return;
+  }
+
+  // Sort indices in ascending order
+  QList<int> indices;
+  for (QListWidgetItem *item : selectedItems) {
+    indices.append(listWidget->row(item));
+  }
+  std::ranges::sort(indices);
+
+  // Get the first index and count of selected items
+  int firstIndex = indices.first();
+  int count = indices.size();
+
+  // Merge the items
+  mergeItems(firstIndex, count);
 }
 
 template <typename T> void QueueManagerWidget<T>::clearQueue() { clear(); }
@@ -207,7 +253,9 @@ template <typename T> void QueueManagerWidget<T>::setupUI() {
   listWidget = new QListWidget(this);
   mainLayout->addWidget(listWidget);
 
-  listWidget->setSelectionMode(QAbstractItemView::SingleSelection);
+  listWidget->setSelectionMode(
+      QAbstractItemView::ExtendedSelection); // Changed to allow multiple
+                                             // selection
   listWidget->setDragDropMode(QAbstractItemView::InternalMove);
   listWidget->setDefaultDropAction(Qt::MoveAction);
 
@@ -242,9 +290,12 @@ template <typename T> void QueueManagerWidget<T>::updateListWidget() {
     auto *label = new QLabel(itemToString(queue[i]));
     auto *deleteBtn = new QPushButton("删除");
     deleteBtn->setFixedSize(50, 24);
+    auto *mergeBtn = new QPushButton("合并");
+    mergeBtn->setFixedSize(50, 24);
 
     layout->addWidget(label);
     layout->addStretch();
+    layout->addWidget(mergeBtn);
     layout->addWidget(deleteBtn);
 
     auto *item = new QListWidgetItem();
@@ -252,15 +303,11 @@ template <typename T> void QueueManagerWidget<T>::updateListWidget() {
     listWidget->setItemWidget(item, itemWidget);
     item->setSizeHint(itemWidget->sizeHint());
 
-    connect(deleteBtn, &QPushButton::clicked, this, [this, deleteBtn]() {
-      for (int i = 0; i < listWidget->count(); ++i) {
-        QWidget *w = listWidget->itemWidget(listWidget->item(i));
-        if (w && w->findChild<QPushButton *>() == deleteBtn) {
-          deleteAtPosition(i);
-          break;
-        }
-      }
-    });
+    connect(deleteBtn, &QPushButton::clicked, this,
+            [this]() { deleteSelected(); });
+
+    connect(mergeBtn, &QPushButton::clicked, this,
+            [this]() { mergeSelected(); });
   }
 }
 
