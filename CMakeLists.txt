@@ -8,6 +8,7 @@ add_subdirectory(src/sentense)
 add_subdirectory(src/chat)
 add_subdirectory(src/stt)
 add_subdirectory(src/parse)
+add_subdirectory(src/widgets/queman)
 
 find_package(Qt6 REQUIRED COMPONENTS Widgets WebEngineWidgets Charts)
 find_package(spdlog REQUIRED)
