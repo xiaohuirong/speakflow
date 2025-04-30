@@ -201,22 +201,38 @@ template <typename T> void QueueManagerWidget<T>::append(const QString &value) {
 
 template <typename T> void QueueManagerWidget<T>::deleteSelected() {
   QList<QListWidgetItem *> selectedItems = listWidget->selectedItems();
-  if (selectedItems.isEmpty()) {
-    // If nothing is selected, delete the current row (backward compatibility)
-    deleteAtPosition(listWidget->currentRow());
-    return;
-  }
+  if (!selectedItems.isEmpty()) {
+    // Sort indices in descending order to avoid shifting issues
+    QList<int> indices;
+    for (QListWidgetItem *item : selectedItems) {
+      indices.append(listWidget->row(item));
+    }
+    std::ranges::sort(indices, std::greater<int>{});
 
-  // Sort indices in descending order to avoid shifting issues
-  QList<int> indices;
-  for (QListWidgetItem *item : selectedItems) {
-    indices.append(listWidget->row(item));
-  }
-  std::ranges::sort(indices, std::greater<int>{});
-
-  for (int index : indices) {
-    if (index >= 0 && index < queue.size()) {
-      queue.removeAt(index);
+    for (int index : indices) {
+      if (index >= 0 && index < queue.size()) {
+        queue.removeAt(index);
+      }
+    }
+  } else {
+    // 当没有选择任何项目时，找到触发按钮的对应行
+    QPushButton *deleteBtn = qobject_cast<QPushButton *>(sender());
+    if (deleteBtn) {
+      // 找到按钮所在的itemWidget
+      QWidget *itemWidget = qobject_cast<QWidget *>(deleteBtn->parent());
+      if (itemWidget) {
+        // 遍历所有items找到对应的行
+        for (int i = 0; i < listWidget->count(); ++i) {
+          if (listWidget->itemWidget(listWidget->item(i))) {
+            if (listWidget->itemWidget(listWidget->item(i)) == itemWidget) {
+              if (i >= 0 && i < queue.size()) {
+                queue.removeAt(i);
+              }
+              break;
+            }
+          }
+        }
+      }
     }
   }
 
@@ -236,7 +252,7 @@ template <typename T> void QueueManagerWidget<T>::mergeSelected() {
   for (QListWidgetItem *item : selectedItems) {
     indices.append(listWidget->row(item));
   }
-  std::ranges::sort(indices, std::greater<int>());
+  std::ranges::sort(indices, std::greater<int>{});
 
   if (!mergeFunction) {
     return;
