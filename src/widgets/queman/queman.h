@@ -341,6 +341,25 @@ template <typename T> void QueueManagerWidget<T>::updateListWidget() {
     listWidget->setItemWidget(item, itemWidget);
     item->setSizeHint(itemWidget->sizeHint());
 
+    // **关键修改：使用 QPalette 动态获取系统颜色**
+    auto updateLabelColor = [label, item, this]() {
+      const QPalette &palette = listWidget->palette();
+      if (item->isSelected()) {
+        label->setPalette(palette); // 使用系统选中颜色
+        label->setForegroundRole(QPalette::HighlightedText);
+      } else {
+        label->setPalette(palette); // 使用系统普通文本颜色
+        label->setForegroundRole(QPalette::Text);
+      }
+    };
+
+    // 初始设置一次颜色
+    updateLabelColor();
+
+    // 监听选中状态变化
+    QObject::connect(listWidget, &QListWidget::itemSelectionChanged, label,
+                     updateLabelColor);
+
     connect(deleteBtn, &QPushButton::clicked, this,
             [this]() { deleteSelected(); });
 
