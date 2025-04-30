@@ -147,17 +147,16 @@ void Sentense::checkForSentences() {
     return;
   }
 
-  size_t start = 0;
-  size_t end = 0;
+  size_t start = speeches[0].start;
+  size_t end = speeches[0].end;
 
   // 处理检测到的语音段
   for (size_t i = 0; i < speeches.size() - 1; i++) {
     const auto &speech = speeches[i];
-    if (speech.end - speech.start < (m_sample_rate * 0.1) / 1000) {
+    if (speech.end - speech.start < (m_sample_rate * 100) / 1000) {
       // 忽略太短的语音段（小于100ms）
       continue;
     }
-
     end = speech.end;
 
     // 提取完整句子
@@ -167,10 +166,9 @@ void Sentense::checkForSentences() {
     // 通过回调返回句子
     m_callback(sentence);
 
-    start = end;
+    start = speeches[i + 1].start;
+    end = speeches[i + 1].end;
   }
-
-  end = speeches[speeches.size() - 1].end;
 
   if (m_buffer_fill - end >= PROCESS_INTERVAL_MS * m_sample_rate / 1000) {
     std::vector<float> sentence(audio_for_vad.begin() + start,
