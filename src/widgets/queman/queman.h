@@ -21,8 +21,8 @@ public:
   virtual void mergeItems(int start, int count) = 0;
   virtual void moveItem(int index, int distance) = 0;
   virtual void moveToFront(int index) = 0;
-  virtual void insertAtPosition(int index, const QString &value) = 0; // 新增
-  virtual void append(const QString &value) = 0;                      // 新增
+  virtual void insertAtPosition(int index, const QString &value) = 0;
+  virtual void append(const QString &value) = 0;
 
 public slots:
   virtual void deleteSelected() = 0;
@@ -39,6 +39,7 @@ public:
   void setItems(const QList<T> &items);
   [[nodiscard]] auto getItems() const -> QList<T>;
   void setMergeFunction(std::function<T(const T &, const T &)> func);
+  void setDisplayFunction(std::function<QString(const T &)> func); // 新增
 
   // Implement pure virtual functions
   void clear() override;
@@ -48,8 +49,8 @@ public:
   void mergeItems(int start, int count) override;
   void moveItem(int index, int distance) override;
   void moveToFront(int index) override;
-  void insertAtPosition(int index, const QString &value) override; // 新增
-  void append(const QString &value) override;                      // 新增
+  void insertAtPosition(int index, const QString &value) override;
+  void append(const QString &value) override;
 
   void deleteSelected() override;
   void clearQueue() override;
@@ -59,18 +60,25 @@ private:
   void connectSignals();
   void updateListWidget();
   [[nodiscard]] inline auto itemToString(const T &item) const -> QString {
+    if (displayFunction) {
+      return displayFunction(item);
+    }
     return QString::number(item);
   }
 
   QListWidget *listWidget{};
   QList<T> queue;
   std::function<T(const T &, const T &)> mergeFunction;
+  std::function<QString(const T &)> displayFunction; // 新增
 };
 
 // 特化声明
 template <>
 inline auto QueueManagerWidget<QString>::itemToString(const QString &item) const
     -> QString {
+  if (displayFunction) {
+    return displayFunction(item);
+  }
   return item;
 }
 
@@ -96,6 +104,13 @@ template <typename T>
 void QueueManagerWidget<T>::setMergeFunction(
     std::function<T(const T &, const T &)> func) {
   mergeFunction = func;
+}
+
+template <typename T>
+void QueueManagerWidget<T>::setDisplayFunction(
+    std::function<QString(const T &)> func) {
+  displayFunction = func;
+  updateListWidget();
 }
 
 template <typename T> void QueueManagerWidget<T>::clear() {
@@ -200,8 +215,8 @@ template <typename T> void QueueManagerWidget<T>::setupUI() {
   auto *clearBtn = new QPushButton(tr("Clear Queue"), this);
   auto *moveBtn = new QPushButton(tr("Move Item"), this);
   auto *moveToFrontBtn = new QPushButton(tr("Move to Front"), this);
-  auto *insertBtn = new QPushButton(tr("Insert Item"), this); // 新增
-  auto *appendBtn = new QPushButton(tr("Append Item"), this); // 新增
+  auto *insertBtn = new QPushButton(tr("Insert Item"), this);
+  auto *appendBtn = new QPushButton(tr("Append Item"), this);
 
   buttonLayout->addWidget(deleteSelectedBtn);
   buttonLayout->addWidget(deleteAtPosBtn);
@@ -209,8 +224,8 @@ template <typename T> void QueueManagerWidget<T>::setupUI() {
   buttonLayout->addWidget(clearBtn);
   buttonLayout->addWidget(moveBtn);
   buttonLayout->addWidget(moveToFrontBtn);
-  buttonLayout->addWidget(insertBtn); // 新增
-  buttonLayout->addWidget(appendBtn); // 新增
+  buttonLayout->addWidget(insertBtn);
+  buttonLayout->addWidget(appendBtn);
 
   mainLayout->addLayout(buttonLayout);
 
@@ -250,7 +265,7 @@ template <typename T> void QueueManagerWidget<T>::setupUI() {
   });
   connect(moveToFrontBtn, &QPushButton::clicked,
           [this]() { moveToFront(listWidget->currentRow()); });
-  connect(insertBtn, &QPushButton::clicked, [this]() { // 新增
+  connect(insertBtn, &QPushButton::clicked, [this]() {
     bool ok;
     int index = QInputDialog::getInt(this, tr("Insert Item"),
                                      tr("Enter position to insert:"), 0, 0,
@@ -264,7 +279,7 @@ template <typename T> void QueueManagerWidget<T>::setupUI() {
     if (ok)
       insertAtPosition(index, value);
   });
-  connect(appendBtn, &QPushButton::clicked, [this]() { // 新增
+  connect(appendBtn, &QPushButton::clicked, [this]() {
     bool ok;
     QString value = QInputDialog::getText(this, tr("Append Item"),
                                           tr("Enter value to append:"),

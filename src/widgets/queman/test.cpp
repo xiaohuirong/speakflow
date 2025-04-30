@@ -10,6 +10,10 @@ auto main(int argc, char *argv[]) -> int {
   queueManager.setMergeFunction(
       [](const QString &a, const QString &b) { return a + " + " + b; });
 
+  // 设置显示函数
+  queueManager.setDisplayFunction(
+      [](const QString &item) { return "Item: " + item.toUpper(); });
+
   // 添加初始数据
   QList<QString> items = {"Apple", "Banana", "Cherry", "Date"};
   queueManager.setItems(items);
