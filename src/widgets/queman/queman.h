@@ -212,7 +212,7 @@ template <typename T> void QueueManagerWidget<T>::deleteSelected() {
   for (QListWidgetItem *item : selectedItems) {
     indices.append(listWidget->row(item));
   }
-  std::sort(indices.begin(), indices.end(), std::greater<int>());
+  std::ranges::sort(indices, std::greater<int>{});
 
   for (int index : indices) {
     if (index >= 0 && index < queue.size()) {
