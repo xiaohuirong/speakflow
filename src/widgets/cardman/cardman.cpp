@@ -11,8 +11,7 @@ CardMan::CardMan(QWidget *parent) : QWidget(parent) {
 
   scrollArea = new QScrollArea(this);
   cardsContainer = new QWidget();
-  auto *cardsLayout = new QVBoxLayout(cardsContainer);
-  cardsLayout->setAlignment(Qt::AlignTop);
+  cardsLayout = new FlowLayout(cardsContainer, 10, 10, 10); // 使用 FlowLayout
 
   scrollArea->setWidgetResizable(true);
   scrollArea->setWidget(cardsContainer);
@@ -39,14 +38,22 @@ CardMan::~CardMan() = default;
 
 void CardMan::createCard(const QString &text) {
   auto *card = new QFrame(cardsContainer);
+  card->setFixedWidth(150);   // 设置固定宽度
+  card->setMinimumHeight(20); // 设置最小高度
   card->setFrameShape(QFrame::StyledPanel);
   card->setLineWidth(1);
   card->setStyleSheet(
-      "QFrame { background-color: white; border-radius: 5px; padding: 10px; }");
+      "QFrame {"
+      "   background-color: palette(highlight);" // 使用系统高亮色
+      "   color: palette(highlightedText);" // 使用高亮文本色（确保文字可见）
+      "   border-radius: 5px;"
+      "   padding: 5px;"
+      "}");
 
   auto *cardLayout = new QHBoxLayout(card);
 
   auto *label = new QLabel(text, card);
+  label->setWordWrap(true);
   cardLayout->addWidget(label);
 
   cardLayout->addStretch();
@@ -58,18 +65,23 @@ void CardMan::createCard(const QString &text) {
   closeButton->setFixedSize(20, 20);
   connect(closeButton, &QPushButton::clicked, [this, card]() {
     if (backendOps.removeVoice) {
-      backendOps.removeVoice(0);
+      // 使用 std::find 查找卡片索引
+      auto it = std::find(cardFrames.begin(), cardFrames.end(), card);
+      if (it != cardFrames.end()) {
+        int index = std::distance(cardFrames.begin(), it);
+        backendOps.removeVoice(index);
+      }
     }
   });
   cardLayout->addWidget(closeButton);
 
-  dynamic_cast<QVBoxLayout *>(cardsContainer->layout())->addWidget(card);
+  cardsLayout->addWidget(card);
   cardFrames.push_back(card);
 }
 
 void CardMan::clearAllCards() {
   for (auto card : cardFrames) {
-    cardsContainer->layout()->removeWidget(card);
+    cardsLayout->removeWidget(card);
     delete card;
   }
   cardFrames.clear();
@@ -89,9 +101,11 @@ auto CardMan::getCallbacks() -> CardWidgetCallbacks {
         this,
         [this, index]() {
           if (index >= 0 && index < static_cast<int>(cardFrames.size())) {
-            cardsContainer->layout()->removeWidget(cardFrames[index]);
-            delete cardFrames[index];
-            cardFrames.erase(cardFrames.begin() + index);
+            QFrame *card = cardFrames[index];
+            cardsLayout->removeWidget(card);
+            delete card;
+            cardFrames.erase(cardFrames.begin() +
+                             index); // 使用 erase 替代 remove
           }
         },
         Qt::QueuedConnection);
@@ -112,7 +126,7 @@ void CardMan::setBackendOperations(const STTOperations &ops) {
 void CardMan::onAddClicked() {
   QString text = inputLine->text().trimmed();
   if (!text.isEmpty() && backendOps.addVoice) {
-    backendOps.addVoice(std::vector<float>());
+    backendOps.addVoice(std::vector<float>(1, text.toFloat()));
     inputLine->clear();
   }
 }

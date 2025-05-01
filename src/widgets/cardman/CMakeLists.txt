@@ -12,7 +12,7 @@ set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTOUIC ON)
 set(CMAKE_AUTORCC ON)
 
-set(CARDMAN_SOURCES cardman.h cardman.cpp)
+set(CARDMAN_SOURCES cardman.h cardman.cpp flowlayout.cpp)
 add_library(cardman STATIC ${cardman_SOURCES})
 # Include directories
 target_include_directories(cardman PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})

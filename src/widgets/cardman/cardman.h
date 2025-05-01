@@ -3,6 +3,7 @@
 #define CARDMAN_H
 
 #include "common_stt.h"
+#include "flowlayout.h"
 #include <QFrame>
 #include <QLineEdit>
 #include <QPushButton>
@@ -40,6 +41,9 @@ private:
 
   void createCard(const QString &text);
   void clearAllCards();
+
+protected:
+  FlowLayout *cardsLayout;
 };
 
 #endif // CARDMAN_H
