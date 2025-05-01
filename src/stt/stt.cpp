@@ -43,14 +43,15 @@ void STT::start() { processThread = thread(&STT::processVoices, this); }
 
 void STT::processVoices() {
   while (true) {
-    Voice voice = {.voice_data = vector<float>(), .no_context = false};
+    Voice mergedVoice = {.voice_data = vector<float>(), .no_context = false};
+    bool hasData = false;
 
     {
       unique_lock<mutex> lock(queueMutex);
       cv.wait(lock, [this]() {
         return (!voiceQueue.empty() && autoProcessing != 0) || stopInference;
       });
-      spdlog::info(__func__, "pick a voice");
+      spdlog::info(__func__, "processing voices");
 
       if (stopInference) {
         spdlog::info(__func__, "STT stop then return");
@@ -61,20 +62,35 @@ void STT::processVoices() {
         continue;
       }
 
-      voice = voiceQueue.front();
-      voiceQueue.pop();
+      // Merge all available voices in the queue
+      while (!voiceQueue.empty()) {
+        Voice &voice = voiceQueue.front();
+
+        // Merge voice data
+        mergedVoice.voice_data.insert(mergedVoice.voice_data.end(),
+                                      voice.voice_data.begin(),
+                                      voice.voice_data.end());
+
+        // Use the no_context flag from the first voice if not set yet
+        if (!hasData) {
+          mergedVoice.no_context = voice.no_context;
+        }
+
+        voiceQueue.pop();
+        hasData = true;
+      }
 
       if (autoProcessing > 0) {
-        autoProcessing -= 1;
+        autoProcessing = 0;
       }
     }
 
-    if (whisper_callback) {
-      if (!voice.voice_data.empty()) {
-        string text = inference(voice.no_context, voice.voice_data);
+    if (whisper_callback && hasData) {
+      if (!mergedVoice.voice_data.empty()) {
+        string text = inference(mergedVoice.no_context, mergedVoice.voice_data);
         whisper_callback(text);
       } else {
-        spdlog::error(__func__, "no voice");
+        spdlog::error("{}: {}", __func__, "no voice data after merge");
       }
     }
   }
@@ -85,9 +101,7 @@ void STT::addVoice(bool no_context, vector<float> voice_data) {
     lock_guard<mutex> lock(queueMutex);
     voiceQueue.push({voice_data, no_context});
   }
-  if (autoProcessing) {
-    cv.notify_one();
-  }
+  cv.notify_one();
 }
 
 void STT::stop() {
@@ -100,13 +114,13 @@ void STT::stop() {
 }
 
 // Queue management functions
-void STT::clearQueue() {
+void STT::clearVoice() {
   lock_guard<mutex> lock(queueMutex);
   queue<Voice> empty;
   swap(voiceQueue, empty);
 }
 
-auto STT::removeFromQueue(size_t index) -> bool {
+auto STT::removeVoice(size_t index) -> bool {
   lock_guard<mutex> lock(queueMutex);
   if (index >= voiceQueue.size())
     return false;
@@ -128,144 +142,13 @@ auto STT::removeFromQueue(size_t index) -> bool {
   return true;
 }
 
-auto STT::mergeInQueue(size_t startIndex, size_t count) -> bool {
-  lock_guard<mutex> lock(queueMutex);
-  if (startIndex >= voiceQueue.size() || startIndex + count > voiceQueue.size())
-    return false;
-
-  deque<Voice> tempDeque;
-  while (!voiceQueue.empty()) {
-    tempDeque.push_back(voiceQueue.front());
-    voiceQueue.pop();
-  }
-
-  if (count < 2)
-    return true; // Nothing to merge
-
-  // Merge the specified items
-  vector<float> mergedData;
-  bool no_context = tempDeque[startIndex].no_context;
-
-  for (size_t i = startIndex; i < startIndex + count; ++i) {
-    mergedData.insert(mergedData.end(), tempDeque[i].voice_data.begin(),
-                      tempDeque[i].voice_data.end());
-  }
-
-  // Remove the merged items
-  tempDeque.erase(tempDeque.begin() + startIndex,
-                  tempDeque.begin() + startIndex + count);
-
-  // Insert the merged item
-  tempDeque.insert(tempDeque.begin() + startIndex, {mergedData, no_context});
-
-  // Convert back to queue
-  for (const auto &item : tempDeque) {
-    voiceQueue.push(item);
-  }
-
-  return true;
-}
-
-auto STT::moveInQueue(size_t index, int distance) -> bool {
-  lock_guard<mutex> lock(queueMutex);
-  if (index >= voiceQueue.size())
-    return false;
-
-  deque<Voice> tempDeque;
-  while (!voiceQueue.empty()) {
-    tempDeque.push_back(voiceQueue.front());
-    voiceQueue.pop();
-  }
-
-  size_t newPos = index + distance;
-  if (distance < 0 && newPos > index) { // Underflow check
-    newPos = 0;
-  } else if (newPos >= tempDeque.size()) {
-    newPos = tempDeque.size() - 1;
-  }
-
-  if (newPos == index)
-    return true; // No movement needed
-
-  Voice item = tempDeque[index];
-  tempDeque.erase(tempDeque.begin() + index);
-  tempDeque.insert(tempDeque.begin() + newPos, item);
-
-  // Convert back to queue
-  for (const auto &item : tempDeque) {
-    voiceQueue.push(item);
-  }
-
-  return true;
-}
-
-auto STT::moveToFront(size_t index) -> bool {
-  return moveInQueue(index, -static_cast<int>(index));
-}
-
-auto STT::moveToBack(size_t index) -> bool {
-  return moveInQueue(index, voiceQueue.size() - index - 1);
-}
-
 // Manual trigger control
-void STT::setAutoProcessing(bool autoProcess) {
+void STT::setAutoProcessing(int autoProcess) {
   {
     lock_guard<mutex> lock(queueMutex);
     autoProcessing = autoProcess;
   }
-  if (autoProcess) {
-    cv.notify_one();
-  }
-}
-
-auto STT::processNext() -> bool {
-  {
-    lock_guard<mutex> lock(queueMutex);
-    if (voiceQueue.empty())
-      return false;
-
-    if (autoProcessing >= 0) {
-      autoProcessing += 1;
-    }
-  }
-
   cv.notify_one();
-
-  return true;
-}
-
-auto STT::processAt(size_t index) -> bool {
-  {
-    lock_guard<mutex> lock(queueMutex);
-    if (index >= voiceQueue.size())
-      return false;
-
-    deque<Voice> tempDeque;
-    while (!voiceQueue.empty()) {
-      tempDeque.push_back(voiceQueue.front());
-      voiceQueue.pop();
-    }
-
-    Voice item = tempDeque[index];
-    tempDeque.erase(tempDeque.begin() + index);
-    tempDeque.insert(tempDeque.begin(), item); // 移动到最前面
-
-    // Convert back to queue
-    for (const auto &item : tempDeque) {
-      voiceQueue.push(item);
-    }
-
-    if (autoProcessing >= 0) {
-      autoProcessing += 1;
-    }
-  }
-
-  return true;
-}
-
-auto STT::queueSize() -> size_t {
-  lock_guard<mutex> lock(queueMutex);
-  return voiceQueue.size();
 }
 
 auto STT::inference(bool no_context, vector<float> pcmf32) -> string {

@@ -1,10 +1,12 @@
 #include "stt.h"
+#include <chrono>
 #include <cstdint>
 #include <filesystem>
 #include <fstream>
 #include <iostream>
 #include <print>
 #include <spdlog/spdlog.h>
+#include <thread>
 #include <vector>
 #include <whisper.h>
 
@@ -128,14 +130,50 @@ int main() {
 
   STT stt(cparams, wparams, model, language, whisperCallback);
   stt.start();
+  spdlog::info("stt start");
+
+  // wait thread into lock
+  // std::this_thread::sleep_for(std::chrono::milliseconds(100));
+
+  spdlog::info("###########manual trigger test############");
+  stt.setAutoProcessing(0);
+  spdlog::info("stt set auto process 0");
 
   stt.addVoice(false, audioData[0]);
+  spdlog::info("stt addVoice 0");
+
+  stt.addVoice(false, audioData[1]);
+  spdlog::info("stt addVoice 1");
+
+  stt.removeVoice(1);
+  spdlog::info("stt remove index 1");
+
+  stt.setAutoProcessing(1);
+  spdlog::info("stt process once");
+
+  // std::this_thread::sleep_for(std::chrono::milliseconds(100));
+
+  spdlog::info("###########auto trigger test############");
+  stt.addVoice(false, audioData[2]);
+  spdlog::info("stt addVoice 2");
+  // stt.setAutoProcessing(-1);
+  // spdlog::info("stt set auto process -1");
+
+  stt.addVoice(false, audioData[2]);
+  spdlog::info("stt addVoice 2");
+
+  stt.addVoice(false, audioData[3]);
+  spdlog::info("stt addVoice 3");
+
+  // stt.setAutoProcessing(1);
+  // spdlog::info("stt process once");
 
   while (true) {
     std::this_thread::sleep_for(std::chrono::milliseconds(100));
   }
 
   stt.stop();
+  spdlog::info("stt stop");
 
   return 0;
 }

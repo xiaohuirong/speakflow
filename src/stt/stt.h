@@ -27,18 +27,11 @@ public:
   void addVoice(bool no_context, vector<float> voice_data);
 
   // Queue management functions
-  void clearQueue();
-  auto removeFromQueue(size_t index) -> bool;
-  auto mergeInQueue(size_t startIndex, size_t count) -> bool;
-  auto moveInQueue(size_t index, int distance) -> bool;
-  auto moveToFront(size_t index) -> bool;
-  auto moveToBack(size_t index) -> bool;
+  void clearVoice();
+  auto removeVoice(size_t index) -> bool;
 
   // Manual trigger control
-  void setAutoProcessing(bool autoProcess);
-  auto processNext() -> bool;
-  auto processAt(size_t index) -> bool;
-  auto queueSize() -> size_t;
+  void setAutoProcessing(int autoProcess);
 
 private:
   void processVoices();
