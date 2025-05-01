@@ -15,7 +15,11 @@ auto main(int argc, char *argv[]) -> int {
           [frontend_callbacks](const std::vector<float> &audio) {
             frontend_callbacks.onVoiceAdded(std::to_string(audio.size()));
           },
-      .removeVoice = [frontend_callbacks](const size_t index) { return true; },
+      .removeVoice =
+          [frontend_callbacks](const size_t index) {
+            frontend_callbacks.onVoiceRemoved(index);
+            return true;
+          },
       .clearVoice =
           [frontend_callbacks]() { frontend_callbacks.onVoiceCleared(); }};
 

@@ -3,9 +3,10 @@
 #define CARDMAN_H
 
 #include "common_stt.h"
+#include <QFrame>
 #include <QLineEdit>
-#include <QListWidget>
 #include <QPushButton>
+#include <QScrollArea>
 #include <QVBoxLayout>
 #include <QWidget>
 
@@ -27,15 +28,18 @@ private slots:
   void onClearClicked();
 
 private:
-  QListWidget *listWidget;
+  QScrollArea *scrollArea;
+  QWidget *cardsContainer;
   QLineEdit *inputLine;
   QPushButton *addButton;
   QPushButton *removeButton;
   QPushButton *clearButton;
 
   STTOperations backendOps;
+  std::vector<QFrame *> cardFrames;
 
-  // void updateList();
+  void createCard(const QString &text);
+  void clearAllCards();
 };
 
 #endif // CARDMAN_H
