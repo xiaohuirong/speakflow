@@ -9,6 +9,8 @@ using namespace std;
 
 class STT {
 public:
+  enum TriggerMethod { AUTO_TRIGGER = -1, NO_TRIGGER = 0, ONCE_TRIGGER = 1 };
+
   using Callback = function<void(const string &)>;
 
   struct Voice {
@@ -29,7 +31,7 @@ public:
   // Queue management functions
   void clearVoice();
   auto removeVoice(size_t index) -> bool;
-  void setTriggerMethod(int triggerMethod);
+  void setTriggerMethod(TriggerMethod triggerMethod);
 
 private:
   void processVoices();
@@ -38,8 +40,7 @@ private:
 
   queue<Voice> voiceQueue; // Message queue
   bool stopInference;      // Whether to stop the voice system
-  int triggerMethod =
-      -1; // -1 : infinity time, 0: not process, > 0: process time
+  TriggerMethod triggerMethod = AUTO_TRIGGER;
 
   mutex queueMutex;      // Mutex to protect the message queue
   condition_variable cv; // Condition variable for thread synchronization

@@ -136,7 +136,7 @@ int main() {
   // std::this_thread::sleep_for(std::chrono::milliseconds(100));
 
   spdlog::info("###########manual trigger test############");
-  stt.setTriggerMethod(0);
+  stt.setTriggerMethod(STT::NO_TRIGGER);
   spdlog::info("stt set auto process 0");
 
   stt.addVoice(false, audioData[0]);
@@ -148,7 +148,7 @@ int main() {
   stt.removeVoice(1);
   spdlog::info("stt remove index 1");
 
-  stt.setTriggerMethod(1);
+  stt.setTriggerMethod(STT::ONCE_TRIGGER);
   spdlog::info("stt process once");
 
   // std::this_thread::sleep_for(std::chrono::milliseconds(100));

@@ -49,7 +49,8 @@ void STT::processVoices() {
     {
       unique_lock<mutex> lock(queueMutex);
       cv.wait(lock, [this]() {
-        return (!voiceQueue.empty() && triggerMethod != 0) || stopInference;
+        return (!voiceQueue.empty() && triggerMethod != NO_TRIGGER) ||
+               stopInference;
       });
       spdlog::info(__func__, "processing voices");
 
@@ -80,8 +81,8 @@ void STT::processVoices() {
         hasData = true;
       }
 
-      if (triggerMethod > 0) {
-        triggerMethod = 0;
+      if (triggerMethod == ONCE_TRIGGER) {
+        triggerMethod = NO_TRIGGER;
       }
     }
 
@@ -143,7 +144,7 @@ auto STT::removeVoice(size_t index) -> bool {
 }
 
 // Manual trigger control
-void STT::setTriggerMethod(int triggerMethod) {
+void STT::setTriggerMethod(TriggerMethod triggerMethod) {
   {
     lock_guard<mutex> lock(queueMutex);
     this->triggerMethod = triggerMethod;
