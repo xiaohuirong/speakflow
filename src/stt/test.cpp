@@ -123,13 +123,8 @@ int main() {
   string model = "../../models/ggml-large-v3.bin";
   string language = "zh";
 
-  WhisperCallback whisperCallback([](const string &text) {
-    string keyword = "明镜与点点";
-    string message = text;
-    if (message != "" && message.find(keyword) == string::npos) {
-      spdlog::info(message);
-    }
-  });
+  WhisperCallback whisperCallback(
+      [](const string &text) { spdlog::info(text); });
 
   STT stt(cparams, wparams, model, language, whisperCallback);
   stt.start();
