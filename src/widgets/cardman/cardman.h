@@ -1,14 +1,10 @@
-// frontend.h - Qt前端界面
 #ifndef CARDMAN_H
 #define CARDMAN_H
 
 #include "common_stt.h"
 #include "flowlayout.h"
 #include <QFrame>
-#include <QLineEdit>
-#include <QPushButton>
 #include <QScrollArea>
-#include <QVBoxLayout>
 #include <QWidget>
 
 class CardMan : public QWidget {
@@ -23,19 +19,14 @@ public:
   // 设置后端操作接口
   void setBackendOperations(const STTOperations &ops);
 
-private slots:
-  void onAddClicked();
-  void onRemoveClicked();
-  void onClearClicked();
+public slots:
+  void addCard(const QString &text);
+  void removeCard(int index);
+  void clearCards();
 
 private:
   QScrollArea *scrollArea;
   QWidget *cardsContainer;
-  QLineEdit *inputLine;
-  QPushButton *addButton;
-  QPushButton *removeButton;
-  QPushButton *clearButton;
-
   STTOperations backendOps;
   std::vector<QFrame *> cardFrames;
 
@@ -45,5 +36,4 @@ private:
 protected:
   FlowLayout *cardsLayout;
 };
-
 #endif // CARDMAN_H
