@@ -11,10 +11,12 @@
 #include <whisper.h>
 
 STT::STT(whisper_context_params &cparams, whisper_full_params &wparams,
-         string path_model, string language, bool no_context, Callback callback)
+         string path_model, string language, bool no_context, Callback callback,
+         QueueUpdateCallback queueCallback)
     : stopInference(false), whisper_callback(std::move(callback)),
-      cparams(cparams), path_model(std::move(path_model)),
-      language(std::move(language)), wparams(wparams), no_context(no_context) {
+      queue_update_callback(std::move(queueCallback)), cparams(cparams),
+      path_model(std::move(path_model)), language(std::move(language)),
+      wparams(wparams), no_context(no_context) {
 
   // wparams.language is just a pointer!
   this->wparams.language = this->language.c_str();
@@ -37,6 +39,24 @@ STT::STT(whisper_context_params &cparams, whisper_full_params &wparams,
 STT::~STT() {
   whisper_print_timings(ctx);
   whisper_free(ctx);
+}
+
+auto STT::getQueueSizes() const -> vector<size_t> {
+  lock_guard<mutex> lock(queueMutex);
+  vector<size_t> sizes;
+  queue<vector<float>> tempQueue = voiceQueue;
+
+  while (!tempQueue.empty()) {
+    sizes.push_back(tempQueue.front().size());
+    tempQueue.pop();
+  }
+  return sizes;
+}
+
+void STT::notifyQueueUpdate() {
+  if (queue_update_callback) {
+    queue_update_callback(getQueueSizes());
+  }
 }
 
 void STT::start() { processThread = thread(&STT::processVoices, this); }
@@ -65,10 +85,7 @@ void STT::processVoices() {
       // Merge all available voices in the queue
       while (!voiceQueue.empty()) {
         vector<float> &voice = voiceQueue.front();
-
-        // Merge voice data
         mergedVoice.insert(mergedVoice.end(), voice.begin(), voice.end());
-
         voiceQueue.pop();
       }
 
@@ -76,6 +93,8 @@ void STT::processVoices() {
         triggerMethod = NO_TRIGGER;
       }
     }
+
+    notifyQueueUpdate();
 
     if (whisper_callback) {
       if (!mergedVoice.empty()) {
@@ -94,6 +113,7 @@ void STT::addVoice(vector<float> voice_data) {
     voiceQueue.push(voice_data);
   }
   cv.notify_one();
+  notifyQueueUpdate();
 }
 
 void STT::stop() {
@@ -105,36 +125,44 @@ void STT::stop() {
   processThread.join();
 }
 
-// Queue management functions
 void STT::clearVoice() {
-  lock_guard<mutex> lock(queueMutex);
-  queue<vector<float>> empty;
-  swap(voiceQueue, empty);
+  {
+    lock_guard<mutex> lock(queueMutex);
+    queue<vector<float>> empty;
+    swap(voiceQueue, empty);
+  }
+  notifyQueueUpdate();
 }
 
 auto STT::removeVoice(size_t index) -> bool {
-  lock_guard<mutex> lock(queueMutex);
-  if (index >= voiceQueue.size())
-    return false;
+  bool result = false;
+  {
+    lock_guard<mutex> lock(queueMutex);
+    if (index >= voiceQueue.size())
+      return false;
 
-  // Convert queue to deque for random access
-  deque<vector<float>> tempDeque;
-  while (!voiceQueue.empty()) {
-    tempDeque.push_back(voiceQueue.front());
-    voiceQueue.pop();
+    // Convert queue to deque for random access
+    deque<vector<float>> tempDeque;
+    while (!voiceQueue.empty()) {
+      tempDeque.push_back(voiceQueue.front());
+      voiceQueue.pop();
+    }
+
+    tempDeque.erase(tempDeque.begin() + index);
+    result = true;
+
+    // Convert back to queue
+    for (const auto &item : tempDeque) {
+      voiceQueue.push(item);
+    }
   }
 
-  tempDeque.erase(tempDeque.begin() + index);
-
-  // Convert back to queue
-  for (const auto &item : tempDeque) {
-    voiceQueue.push(item);
+  if (result) {
+    notifyQueueUpdate();
   }
-
-  return true;
+  return result;
 }
 
-// Manual trigger control
 void STT::setTriggerMethod(TriggerMethod triggerMethod) {
   {
     lock_guard<mutex> lock(queueMutex);

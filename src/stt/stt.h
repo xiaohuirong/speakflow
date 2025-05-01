@@ -12,9 +12,11 @@ public:
   enum TriggerMethod { AUTO_TRIGGER = -1, NO_TRIGGER = 0, ONCE_TRIGGER = 1 };
 
   using Callback = function<void(const string &)>;
+  using QueueUpdateCallback = function<void(const vector<size_t> &)>;
 
   STT(whisper_context_params &cparams, whisper_full_params &wparams,
-      string path_model, string language, bool no_context, Callback callback);
+      string path_model, string language, bool no_context, Callback callback,
+      QueueUpdateCallback queueCallback);
 
   ~STT();
   auto inference(vector<float> voice_data) -> string;
@@ -28,17 +30,21 @@ public:
   auto removeVoice(size_t index) -> bool;
   void setTriggerMethod(TriggerMethod triggerMethod);
 
+  auto getQueueSizes() const -> vector<size_t>;
+
 private:
   void processVoices();
+  void notifyQueueUpdate();
 
   Callback whisper_callback;
+  QueueUpdateCallback queue_update_callback;
 
   queue<vector<float>> voiceQueue; // Message queue
   bool stopInference;              // Whether to stop the voice system
   TriggerMethod triggerMethod = AUTO_TRIGGER;
 
-  mutex queueMutex;      // Mutex to protect the message queue
-  condition_variable cv; // Condition variable for thread synchronization
+  mutable mutex queueMutex; // Mutex to protect the message queue
+  condition_variable cv;    // Condition variable for thread synchronization
 
   thread processThread;
 

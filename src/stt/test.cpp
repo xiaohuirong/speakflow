@@ -13,6 +13,7 @@
 namespace fs = std::filesystem;
 
 using WhisperCallback = std::function<void(const std::string &)>;
+using QueueCallback = std::function<void(const vector<size_t> &)>;
 
 struct WavHeader {
   char riff[4];
@@ -128,7 +129,11 @@ int main() {
   WhisperCallback whisperCallback(
       [](const string &text) { spdlog::info(text); });
 
-  STT stt(cparams, wparams, model, language, false, whisperCallback);
+  QueueCallback queueCallback(
+      [](const vector<size_t> &sizes) { spdlog::info(sizes.size()); });
+
+  STT stt(cparams, wparams, model, language, false, whisperCallback,
+          queueCallback);
   stt.start();
   spdlog::info("stt start");
 
