@@ -13,7 +13,8 @@ auto main(int argc, char *argv[]) -> int {
   const STTOperations backend_operations = {
       .addVoice =
           [frontend_callbacks](const std::vector<float> &audio) {
-            frontend_callbacks.onVoiceAdded(std::to_string(audio[0]));
+            frontend_callbacks.onVoiceAdded(
+                std::to_string(static_cast<int>(audio[0])));
           },
       .removeVoice =
           [frontend_callbacks](const size_t index) {

@@ -3,6 +3,7 @@
 #include <QHBoxLayout>
 #include <QLabel>
 #include <QSpacerItem>
+#include <qnamespace.h>
 #include <sys/socket.h>
 
 CardMan::CardMan(QWidget *parent) : QWidget(parent) {
@@ -38,7 +39,7 @@ CardMan::~CardMan() = default;
 
 void CardMan::createCard(const QString &text) {
   auto *card = new QFrame(cardsContainer);
-  card->setFixedWidth(150);   // 设置固定宽度
+  card->setFixedWidth(120);   // 设置固定宽度
   card->setMinimumHeight(20); // 设置最小高度
   card->setFrameShape(QFrame::StyledPanel);
   card->setLineWidth(1);
@@ -47,10 +48,18 @@ void CardMan::createCard(const QString &text) {
       "   background-color: palette(highlight);" // 使用系统高亮色
       "   color: palette(highlightedText);" // 使用高亮文本色（确保文字可见）
       "   border-radius: 5px;"
-      "   padding: 5px;"
       "}");
 
   auto *cardLayout = new QHBoxLayout(card);
+
+  // 添加音频图标
+  auto *audioIcon = new QLabel(card);
+  audioIcon->setPixmap(
+      QIcon::fromTheme("audio-volume-high").pixmap(20, 20)); // 使用系统图标
+  // 或者使用资源中的图标：
+  // audioIcon->setPixmap(QPixmap(":/icons/audio.png").scaled(16, 16,
+  // Qt::KeepAspectRatio, Qt::SmoothTransformation));
+  cardLayout->addWidget(audioIcon);
 
   auto *label = new QLabel(text, card);
   label->setWordWrap(true);
@@ -58,7 +67,7 @@ void CardMan::createCard(const QString &text) {
 
   cardLayout->addStretch();
 
-  auto *closeButton = new QPushButton("×", card);
+  auto *closeButton = new QPushButton("X", card);
   closeButton->setStyleSheet(
       "QPushButton { border: none; font-size: 16px; color: #999; }"
       "QPushButton:hover { color: #f00; }");
@@ -92,7 +101,8 @@ auto CardMan::getCallbacks() -> CardWidgetCallbacks {
 
   callbacks.onVoiceAdded = [this](const std::string &length) {
     QMetaObject::invokeMethod(
-        this, [this, length]() { createCard(QString::fromStdString(length)); },
+        this,
+        [this, length]() { createCard(QString::fromStdString(length) + "S"); },
         Qt::QueuedConnection);
   };
 
