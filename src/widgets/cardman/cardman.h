@@ -29,7 +29,7 @@ public slots:
 private:
   QScrollArea *scrollArea;
   QWidget *cardsContainer;
-  QPushButton *triggerButton;
+  QPushButton *recordButton; // Changed from triggerButton to recordButton
   QCheckBox *autoTriggerCheckBox;
   STTOperations backendOps;
   std::vector<QFrame *> cardFrames;
@@ -37,6 +37,8 @@ private:
   void createCard(const QString &text);
   void clearAllCards();
   void setupControlButtons();
+
+  bool isRecording = false;
 
 protected:
   FlowLayout *cardsLayout;

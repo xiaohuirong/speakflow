@@ -4,6 +4,7 @@
 #include <QHBoxLayout>
 #include <QLabel>
 #include <QPushButton>
+#include <QSpacerItem>
 #include <algorithm>
 
 CardMan::CardMan(QWidget *parent) : QWidget(parent) {
@@ -25,28 +26,80 @@ void CardMan::setupControlButtons() {
   auto *controlPanel = new QWidget(this);
   auto *controlLayout = new QHBoxLayout(controlPanel);
   controlPanel->setLayout(controlLayout);
+  controlLayout->setContentsMargins(10, 10, 10, 10);
 
-  // Add trigger button
-  triggerButton = new QPushButton("Trigger", controlPanel);
+  // Add record button with microphone icon
+  recordButton = new QPushButton(controlPanel);
+  recordButton->setIcon(QIcon::fromTheme("microphone-sensitivity-high"));
+  recordButton->setIconSize(QSize(24, 24));
+  recordButton->setFixedSize(50, 50);
+  recordButton->setCheckable(false);
+  recordButton->setStyleSheet("QPushButton {"
+                              "   background-color: #f44336;"
+                              "   border-radius: 25px;"
+                              "   border: 2px solid #d32f2f;"
+                              "   outline: none;"
+                              "}"
+                              "QPushButton:hover {"
+                              "   background-color: #e53935;"
+                              "}"
+                              "QPushButton:pressed {"
+                              "   background-color: #c62828;"
+                              "}"
+                              "QPushButton:focus {"
+                              "   border: 2px solid #d32f2f;"
+                              "}");
 
-  triggerButton->setCheckable(false); // 禁用 toggle 特性
+  // Add auto trigger checkbox with better styling
+  autoTriggerCheckBox = new QCheckBox("Auto Mode", controlPanel);
+  autoTriggerCheckBox->setStyleSheet("QCheckBox {"
+                                     "   spacing: 5px;"
+                                     "   font-size: 14px;"
+                                     "}"
+                                     "QCheckBox::indicator {"
+                                     "   width: 18px;"
+                                     "   height: 18px;"
+                                     "}");
 
-  // Add auto trigger checkbox
-  autoTriggerCheckBox = new QCheckBox("Auto Trigger", controlPanel);
-
-  controlLayout->addWidget(triggerButton);
+  // Add spacer to push items to the left
+  controlLayout->addWidget(recordButton);
+  controlLayout->addSpacing(15);
   controlLayout->addWidget(autoTriggerCheckBox);
+  controlLayout->addStretch();
 
-  // Connect signals
-  connect(triggerButton, &QPushButton::pressed, [this]() {
-    if (!autoTriggerCheckBox->isChecked() && backendOps.setTriggerMethod) {
-      backendOps.setTriggerMethod(TriggerMethod::NO_TRIGGER);
-    }
-  });
+  // 修改信号连接，改为点击切换状态
+  connect(recordButton, &QPushButton::clicked, [this]() {
+    if (autoTriggerCheckBox->isChecked())
+      return;
 
-  connect(triggerButton, &QPushButton::released, [this]() {
-    if (!autoTriggerCheckBox->isChecked() && backendOps.setTriggerMethod) {
-      backendOps.setTriggerMethod(TriggerMethod::ONCE_TRIGGER);
+    isRecording = !isRecording;
+
+    if (isRecording) {
+      recordButton->setStyleSheet("QPushButton {"
+                                  "   background-color: green;"
+                                  "   border-radius: 25px;"
+                                  "   border: 2px solid darkgreen;"
+                                  "   outline: none;"
+                                  "}"
+                                  "QPushButton:hover {"
+                                  "   background-color: darkgreen;"
+                                  "}");
+      if (backendOps.setTriggerMethod) {
+        backendOps.setTriggerMethod(TriggerMethod::NO_TRIGGER);
+      }
+    } else {
+      recordButton->setStyleSheet("QPushButton {"
+                                  "   background-color: #f44336;"
+                                  "   border-radius: 25px;"
+                                  "   border: 2px solid #d32f2f;"
+                                  "   outline: none;"
+                                  "}"
+                                  "QPushButton:hover {"
+                                  "   background-color: #e53935;"
+                                  "}");
+      if (backendOps.setTriggerMethod) {
+        backendOps.setTriggerMethod(TriggerMethod::ONCE_TRIGGER);
+      }
     }
   });
 
@@ -54,10 +107,28 @@ void CardMan::setupControlButtons() {
           [this](Qt::CheckState state) {
             if (backendOps.setTriggerMethod) {
               if (state == Qt::Checked) {
-                triggerButton->setEnabled(false);
+                isRecording =
+                    false; // Reset recording state when auto mode is enabled
+                recordButton->setEnabled(false);
+                recordButton->setStyleSheet("QPushButton {"
+                                            "   background-color: #9e9e9e;"
+                                            "   border-radius: 25px;"
+                                            "   border: 2px solid #757575;"
+                                            "}"
+                                            "QPushButton:hover {"
+                                            "   background-color: #9e9e9e;"
+                                            "}");
                 backendOps.setTriggerMethod(TriggerMethod::AUTO_TRIGGER);
               } else {
-                triggerButton->setEnabled(true);
+                recordButton->setEnabled(true);
+                recordButton->setStyleSheet("QPushButton {"
+                                            "   background-color: #f44336;"
+                                            "   border-radius: 25px;"
+                                            "   border: 2px solid #d32f2f;"
+                                            "}"
+                                            "QPushButton:hover {"
+                                            "   background-color: #e53935;"
+                                            "}");
                 backendOps.setTriggerMethod(TriggerMethod::NO_TRIGGER);
               }
             }
