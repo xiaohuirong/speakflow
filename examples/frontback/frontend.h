@@ -13,10 +13,10 @@ class Frontend : public QWidget {
   Q_OBJECT
 public:
   explicit Frontend(QWidget *parent = nullptr);
-  ~Frontend();
+  ~Frontend() override;
 
   // 获取前端回调接口
-  FrontendCallbacks getCallbacks();
+  auto getCallbacks() -> FrontendCallbacks;
 
   // 设置后端操作接口
   void setBackendOperations(const BackendOperations &ops);

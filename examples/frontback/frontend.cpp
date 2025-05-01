@@ -3,7 +3,7 @@
 
 Frontend::Frontend(QWidget *parent) : QWidget(parent) {
   // 创建UI
-  QVBoxLayout *layout = new QVBoxLayout(this);
+  auto *layout = new QVBoxLayout(this);
 
   listWidget = new QListWidget(this);
   inputLine = new QLineEdit(this);
@@ -24,9 +24,9 @@ Frontend::Frontend(QWidget *parent) : QWidget(parent) {
   connect(clearButton, &QPushButton::clicked, this, &Frontend::onClearClicked);
 }
 
-Frontend::~Frontend() {}
+Frontend::~Frontend() = default;
 
-FrontendCallbacks Frontend::getCallbacks() {
+auto Frontend::getCallbacks() -> FrontendCallbacks {
   FrontendCallbacks callbacks;
 
   callbacks.onItemAdded = [this](const std::string &item) {

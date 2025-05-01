@@ -6,7 +6,6 @@
 #include <deque>
 #include <mutex>
 #include <string>
-#include <vector>
 
 class Backend {
 public:
@@ -14,7 +13,7 @@ public:
   ~Backend();
 
   // 初始化后端操作接口
-  BackendOperations getOperations();
+  auto getOperations() -> BackendOperations;
 
   // 设置前端回调
   void setFrontendCallbacks(const FrontendCallbacks &callbacks);

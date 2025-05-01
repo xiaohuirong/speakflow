@@ -8,9 +8,9 @@ Backend::Backend() {
   frontendCallbacks.onListCleared = nullptr;
 }
 
-Backend::~Backend() {}
+Backend::~Backend() = default;
 
-BackendOperations Backend::getOperations() {
+auto Backend::getOperations() -> BackendOperations {
   BackendOperations ops;
 
   ops.addItem = [this](const std::string &item) {
