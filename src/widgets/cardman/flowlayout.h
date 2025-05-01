@@ -22,7 +22,7 @@ public:
   auto takeAt(int index) -> QLayoutItem * override;
 
 private:
-  [[nodiscard]] auto doLayout(const QRect &rect, bool testOnly) const -> int;
+  auto doLayout(const QRect &rect, bool testOnly) const -> int;
   [[nodiscard]] auto smartSpacing(QStyle::PixelMetric pm) const -> int;
 
   QList<QLayoutItem *> itemList;

@@ -6,6 +6,7 @@
 #include <QPushButton>
 #include <QVBoxLayout>
 #include <QWidget>
+#include <csignal>
 
 auto main(int argc, char *argv[]) -> int {
   QApplication app(argc, argv);
@@ -49,7 +50,12 @@ auto main(int argc, char *argv[]) -> int {
             return true;
           },
       .clearVoice =
-          [frontend_callbacks]() { frontend_callbacks.onVoiceCleared(); }};
+          [frontend_callbacks]() { frontend_callbacks.onVoiceCleared(); },
+      .setTriggerMethod =
+          [frontend_callbacks](TriggerMethod method) {
+            if (method == TriggerMethod::ONCE_TRIGGER)
+              frontend_callbacks.onVoiceCleared();
+          }};
 
   cardMan->setBackendOperations(backend_operations);
 

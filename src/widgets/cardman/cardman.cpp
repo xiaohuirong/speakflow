@@ -1,7 +1,10 @@
 #include "cardman.h"
+#include "common_stt.h"
+#include <QCheckBox>
 #include <QHBoxLayout>
 #include <QLabel>
 #include <QPushButton>
+#include <algorithm>
 
 CardMan::CardMan(QWidget *parent) : QWidget(parent) {
   scrollArea = new QScrollArea(this);
@@ -13,8 +16,55 @@ CardMan::CardMan(QWidget *parent) : QWidget(parent) {
   scrollArea->setFrameShape(QFrame::NoFrame);
 
   auto *layout = new QVBoxLayout(this);
+  setupControlButtons();
   layout->addWidget(scrollArea);
   layout->setContentsMargins(0, 0, 0, 0);
+}
+
+void CardMan::setupControlButtons() {
+  auto *controlPanel = new QWidget(this);
+  auto *controlLayout = new QHBoxLayout(controlPanel);
+  controlPanel->setLayout(controlLayout);
+
+  // Add trigger button
+  triggerButton = new QPushButton("Trigger", controlPanel);
+
+  triggerButton->setCheckable(false); // 禁用 toggle 特性
+
+  // Add auto trigger checkbox
+  autoTriggerCheckBox = new QCheckBox("Auto Trigger", controlPanel);
+
+  controlLayout->addWidget(triggerButton);
+  controlLayout->addWidget(autoTriggerCheckBox);
+
+  // Connect signals
+  connect(triggerButton, &QPushButton::pressed, [this]() {
+    if (!autoTriggerCheckBox->isChecked() && backendOps.setTriggerMethod) {
+      backendOps.setTriggerMethod(TriggerMethod::NO_TRIGGER);
+    }
+  });
+
+  connect(triggerButton, &QPushButton::released, [this]() {
+    if (!autoTriggerCheckBox->isChecked() && backendOps.setTriggerMethod) {
+      backendOps.setTriggerMethod(TriggerMethod::ONCE_TRIGGER);
+    }
+  });
+
+  connect(autoTriggerCheckBox, &QCheckBox::checkStateChanged,
+          [this](Qt::CheckState state) {
+            if (backendOps.setTriggerMethod) {
+              if (state == Qt::Checked) {
+                triggerButton->setEnabled(false);
+                backendOps.setTriggerMethod(TriggerMethod::AUTO_TRIGGER);
+              } else {
+                triggerButton->setEnabled(true);
+                backendOps.setTriggerMethod(TriggerMethod::NO_TRIGGER);
+              }
+            }
+          });
+
+  // Add control panel to main layout
+  this->layout()->addWidget(controlPanel);
 }
 
 CardMan::~CardMan() = default;
@@ -49,7 +99,7 @@ void CardMan::createCard(const QString &text) {
       "QPushButton:hover { color: #f00; }");
   closeButton->setFixedSize(20, 20);
   connect(closeButton, &QPushButton::clicked, [this, card]() {
-    auto it = std::find(cardFrames.begin(), cardFrames.end(), card);
+    auto it = std::ranges::find(cardFrames, card);
     if (it != cardFrames.end() && backendOps.removeVoice) {
       int index = std::distance(cardFrames.begin(), it);
       backendOps.removeVoice(index);
@@ -70,12 +120,14 @@ void CardMan::clearAllCards() {
 }
 
 auto CardMan::getCallbacks() -> CardWidgetCallbacks {
-  return {.onVoiceAdded =
-              [this](const std::string &length) {
-                addCard(QString::fromStdString(length) + "S");
-              },
-          .onVoiceRemoved = [this](int index) { removeCard(index); },
-          .onVoiceCleared = [this]() { clearCards(); }};
+  return {
+      .onVoiceAdded =
+          [this](const std::string &length) {
+            addCard(QString::fromStdString(length) + "S");
+          },
+      .onVoiceRemoved = [this](int index) { removeCard(index); },
+      .onVoiceCleared = [this]() { clearCards(); },
+  };
 }
 
 void CardMan::setBackendOperations(const STTOperations &ops) {

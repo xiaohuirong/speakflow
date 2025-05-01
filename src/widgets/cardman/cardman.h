@@ -3,7 +3,9 @@
 
 #include "common_stt.h"
 #include "flowlayout.h"
+#include <QCheckBox>
 #include <QFrame>
+#include <QPushButton>
 #include <QScrollArea>
 #include <QWidget>
 
@@ -27,11 +29,14 @@ public slots:
 private:
   QScrollArea *scrollArea;
   QWidget *cardsContainer;
+  QPushButton *triggerButton;
+  QCheckBox *autoTriggerCheckBox;
   STTOperations backendOps;
   std::vector<QFrame *> cardFrames;
 
   void createCard(const QString &text);
   void clearAllCards();
+  void setupControlButtons();
 
 protected:
   FlowLayout *cardsLayout;
