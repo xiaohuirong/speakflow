@@ -8,6 +8,7 @@
 #include "previewpage.h"
 #include "sentense.h"
 #include "stt.h"
+#include "common_stt.h"
 
 #include <QMainWindow>
 #include <QString>

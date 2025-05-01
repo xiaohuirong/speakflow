@@ -1,3 +1,4 @@
+#include "common_stt.h"
 #include "stt.h"
 #include <chrono>
 #include <cstdint>
@@ -10,10 +11,11 @@
 #include <vector>
 #include <whisper.h>
 
+using std::vector;
+
 namespace fs = std::filesystem;
 
 using WhisperCallback = std::function<void(const std::string &)>;
-using QueueCallback = std::function<void(const vector<size_t> &)>;
 
 struct WavHeader {
   char riff[4];
@@ -86,7 +88,7 @@ auto readWavFilesFromDirectory(const std::string &directoryPath)
   return allAudioData;
 }
 
-int main() {
+auto main() -> int {
   std::string wavDirectory = "../sentense/wav";
 
   if (!fs::exists(wavDirectory)) {
@@ -129,11 +131,43 @@ int main() {
   WhisperCallback whisperCallback(
       [](const string &text) { spdlog::info(text); });
 
-  QueueCallback queueCallback(
-      [](const vector<size_t> &sizes) { spdlog::info(sizes.size()); });
+  STT stt(cparams, wparams, model, language, false, whisperCallback);
+  STTOperations sttcallbacks = stt.getOperations();
 
-  STT stt(cparams, wparams, model, language, false, whisperCallback,
-          queueCallback);
+  // 初始化测试用的前端回调函数
+  const CardWidgetCallbacks frontendCallbacks{
+      // 当音频被添加时的回调
+      .onVoiceAdded = [](const string &length) { spdlog::info(length); },
+
+      // 当音频被移除时的回调
+      .onVoiceRemoved = [](size_t index) { spdlog::info("remove {}", index); },
+
+      // 当音频列表被清空时的回调
+      .onVoiceCleared = []() { spdlog::info("clear"); },
+
+      // 当触发方法改变时的回调
+      .onTriggerMethodChanged =
+          [](TriggerMethod method) {
+            std::string methodStr;
+            switch (method) {
+            case AUTO_TRIGGER:
+              methodStr = "AUTO_TRIGGER";
+              break;
+            case NO_TRIGGER:
+              methodStr = "NO_TRIGGER";
+              break;
+            case ONCE_TRIGGER:
+              methodStr = "ONCE_TRIGGER";
+              break;
+            default:
+              methodStr = "UNKNOWN";
+              break;
+            }
+            spdlog::info(methodStr);
+          }};
+
+  stt.setCardWidgetCallbacks(frontendCallbacks);
+
   stt.start();
   spdlog::info("stt start");
 
@@ -141,33 +175,34 @@ int main() {
   // std::this_thread::sleep_for(std::chrono::milliseconds(100));
 
   spdlog::info("###########manual trigger test############");
-  stt.setTriggerMethod(STT::NO_TRIGGER);
+  sttcallbacks.setTriggerMethod(NO_TRIGGER);
+
   spdlog::info("stt set auto process 0");
 
-  stt.addVoice(audioData[0]);
+  sttcallbacks.addVoice(audioData[0]);
   spdlog::info("stt addVoice 0");
 
-  stt.addVoice(audioData[1]);
+  sttcallbacks.addVoice(audioData[1]);
   spdlog::info("stt addVoice 1");
 
-  stt.removeVoice(1);
+  sttcallbacks.removeVoice(1);
   spdlog::info("stt remove index 1");
 
-  stt.setTriggerMethod(STT::ONCE_TRIGGER);
+  sttcallbacks.setTriggerMethod(ONCE_TRIGGER);
   spdlog::info("stt process once");
 
   // std::this_thread::sleep_for(std::chrono::milliseconds(100));
 
   spdlog::info("###########auto trigger test############");
-  stt.addVoice(audioData[2]);
+  sttcallbacks.addVoice(audioData[2]);
   spdlog::info("stt addVoice 2");
   // stt.setTriggerMethod(-1);
   // spdlog::info("stt set auto process -1");
 
-  stt.addVoice(audioData[2]);
+  sttcallbacks.addVoice(audioData[2]);
   spdlog::info("stt addVoice 2");
 
-  stt.addVoice(audioData[3]);
+  sttcallbacks.addVoice(audioData[3]);
   spdlog::info("stt addVoice 3");
 
   // stt.setTriggerMethod(1);

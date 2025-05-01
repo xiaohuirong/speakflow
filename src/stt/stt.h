@@ -1,4 +1,5 @@
 #pragma once
+#include "common_stt.h"
 #include <condition_variable>
 #include <functional>
 #include <queue>
@@ -9,35 +10,33 @@ using namespace std;
 
 class STT {
 public:
-  enum TriggerMethod { AUTO_TRIGGER = -1, NO_TRIGGER = 0, ONCE_TRIGGER = 1 };
-
   using Callback = function<void(const string &)>;
-  using QueueUpdateCallback = function<void(const vector<size_t> &)>;
 
   STT(whisper_context_params &cparams, whisper_full_params &wparams,
-      string path_model, string language, bool no_context, Callback callback,
-      QueueUpdateCallback queueCallback);
+      string path_model, string language, bool no_context, Callback callback);
 
   ~STT();
   auto inference(vector<float> voice_data) -> string;
 
   void start();
   void stop();
-  void addVoice(vector<float> voice_data);
 
   // Queue management functions
-  void clearVoice();
-  auto removeVoice(size_t index) -> bool;
-  void setTriggerMethod(TriggerMethod triggerMethod);
-
   auto getQueueSizes() const -> vector<size_t>;
+  auto getOperations() -> STTOperations;
+
+  void setCardWidgetCallbacks(const CardWidgetCallbacks &callbacks);
+
+  void addVoice(vector<float> voice_data);
+  auto removeVoice(size_t index) -> bool;
+  void clearVoice();
+  void setTriggerMethod(TriggerMethod triggerMethod);
 
 private:
   void processVoices();
-  void notifyQueueUpdate();
 
   Callback whisper_callback;
-  QueueUpdateCallback queue_update_callback;
+  CardWidgetCallbacks callbacks;
 
   queue<vector<float>> voiceQueue; // Message queue
   bool stopInference;              // Whether to stop the voice system

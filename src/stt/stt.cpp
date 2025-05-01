@@ -11,12 +11,10 @@
 #include <whisper.h>
 
 STT::STT(whisper_context_params &cparams, whisper_full_params &wparams,
-         string path_model, string language, bool no_context, Callback callback,
-         QueueUpdateCallback queueCallback)
+         string path_model, string language, bool no_context, Callback callback)
     : stopInference(false), whisper_callback(std::move(callback)),
-      queue_update_callback(std::move(queueCallback)), cparams(cparams),
-      path_model(std::move(path_model)), language(std::move(language)),
-      wparams(wparams), no_context(no_context) {
+      cparams(cparams), path_model(std::move(path_model)),
+      language(std::move(language)), wparams(wparams), no_context(no_context) {
 
   // wparams.language is just a pointer!
   this->wparams.language = this->language.c_str();
@@ -36,6 +34,10 @@ STT::STT(whisper_context_params &cparams, whisper_full_params &wparams,
   }
 }
 
+void STT::setCardWidgetCallbacks(const CardWidgetCallbacks &callbacks) {
+  this->callbacks = callbacks;
+}
+
 STT::~STT() {
   whisper_print_timings(ctx);
   whisper_free(ctx);
@@ -53,10 +55,13 @@ auto STT::getQueueSizes() const -> vector<size_t> {
   return sizes;
 }
 
-void STT::notifyQueueUpdate() {
-  if (queue_update_callback) {
-    queue_update_callback(getQueueSizes());
-  }
+auto STT::getOperations() -> STTOperations {
+  return STTOperations{
+      .addVoice = [this](const vector<float> &voice) { this->addVoice(voice); },
+      .removeVoice = [this](size_t index) { return this->removeVoice(index); },
+      .clearVoice = [this]() { this->clearVoice(); },
+      .setTriggerMethod =
+          [this](TriggerMethod method) { this->setTriggerMethod(method); }};
 }
 
 void STT::start() { processThread = thread(&STT::processVoices, this); }
@@ -94,7 +99,9 @@ void STT::processVoices() {
       }
     }
 
-    notifyQueueUpdate();
+    if (callbacks.onVoiceCleared) {
+      callbacks.onVoiceCleared();
+    }
 
     if (whisper_callback) {
       if (!mergedVoice.empty()) {
@@ -113,7 +120,9 @@ void STT::addVoice(vector<float> voice_data) {
     voiceQueue.push(voice_data);
   }
   cv.notify_one();
-  notifyQueueUpdate();
+  if (callbacks.onVoiceAdded) {
+    callbacks.onVoiceAdded(std::to_string(voice_data.size()));
+  }
 }
 
 void STT::stop() {
@@ -131,7 +140,9 @@ void STT::clearVoice() {
     queue<vector<float>> empty;
     swap(voiceQueue, empty);
   }
-  notifyQueueUpdate();
+  if (callbacks.onVoiceCleared) {
+    callbacks.onVoiceCleared();
+  }
 }
 
 auto STT::removeVoice(size_t index) -> bool {
@@ -157,8 +168,8 @@ auto STT::removeVoice(size_t index) -> bool {
     }
   }
 
-  if (result) {
-    notifyQueueUpdate();
+  if (result && callbacks.onVoiceRemoved) {
+    callbacks.onVoiceRemoved(index);
   }
   return result;
 }
