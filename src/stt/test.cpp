@@ -128,7 +128,7 @@ int main() {
   WhisperCallback whisperCallback(
       [](const string &text) { spdlog::info(text); });
 
-  STT stt(cparams, wparams, model, language, whisperCallback);
+  STT stt(cparams, wparams, model, language, false, whisperCallback);
   stt.start();
   spdlog::info("stt start");
 
@@ -139,10 +139,10 @@ int main() {
   stt.setTriggerMethod(STT::NO_TRIGGER);
   spdlog::info("stt set auto process 0");
 
-  stt.addVoice(false, audioData[0]);
+  stt.addVoice(audioData[0]);
   spdlog::info("stt addVoice 0");
 
-  stt.addVoice(false, audioData[1]);
+  stt.addVoice(audioData[1]);
   spdlog::info("stt addVoice 1");
 
   stt.removeVoice(1);
@@ -154,15 +154,15 @@ int main() {
   // std::this_thread::sleep_for(std::chrono::milliseconds(100));
 
   spdlog::info("###########auto trigger test############");
-  stt.addVoice(false, audioData[2]);
+  stt.addVoice(audioData[2]);
   spdlog::info("stt addVoice 2");
   // stt.setTriggerMethod(-1);
   // spdlog::info("stt set auto process -1");
 
-  stt.addVoice(false, audioData[2]);
+  stt.addVoice(audioData[2]);
   spdlog::info("stt addVoice 2");
 
-  stt.addVoice(false, audioData[3]);
+  stt.addVoice(audioData[3]);
   spdlog::info("stt addVoice 3");
 
   // stt.setTriggerMethod(1);

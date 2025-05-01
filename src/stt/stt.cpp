@@ -11,10 +11,10 @@
 #include <whisper.h>
 
 STT::STT(whisper_context_params &cparams, whisper_full_params &wparams,
-         string path_model, string language, Callback callback)
+         string path_model, string language, bool no_context, Callback callback)
     : stopInference(false), whisper_callback(std::move(callback)),
       cparams(cparams), path_model(std::move(path_model)),
-      language(std::move(language)), wparams(wparams) {
+      language(std::move(language)), wparams(wparams), no_context(no_context) {
 
   // wparams.language is just a pointer!
   this->wparams.language = this->language.c_str();
@@ -43,8 +43,7 @@ void STT::start() { processThread = thread(&STT::processVoices, this); }
 
 void STT::processVoices() {
   while (true) {
-    Voice mergedVoice = {.voice_data = vector<float>(), .no_context = false};
-    bool hasData = false;
+    vector<float> mergedVoice;
 
     {
       unique_lock<mutex> lock(queueMutex);
@@ -65,20 +64,12 @@ void STT::processVoices() {
 
       // Merge all available voices in the queue
       while (!voiceQueue.empty()) {
-        Voice &voice = voiceQueue.front();
+        vector<float> &voice = voiceQueue.front();
 
         // Merge voice data
-        mergedVoice.voice_data.insert(mergedVoice.voice_data.end(),
-                                      voice.voice_data.begin(),
-                                      voice.voice_data.end());
-
-        // Use the no_context flag from the first voice if not set yet
-        if (!hasData) {
-          mergedVoice.no_context = voice.no_context;
-        }
+        mergedVoice.insert(mergedVoice.end(), voice.begin(), voice.end());
 
         voiceQueue.pop();
-        hasData = true;
       }
 
       if (triggerMethod == ONCE_TRIGGER) {
@@ -86,9 +77,9 @@ void STT::processVoices() {
       }
     }
 
-    if (whisper_callback && hasData) {
-      if (!mergedVoice.voice_data.empty()) {
-        string text = inference(mergedVoice.no_context, mergedVoice.voice_data);
+    if (whisper_callback) {
+      if (!mergedVoice.empty()) {
+        string text = inference(mergedVoice);
         whisper_callback(text);
       } else {
         spdlog::error("{}: {}", __func__, "no voice data after merge");
@@ -97,10 +88,10 @@ void STT::processVoices() {
   }
 }
 
-void STT::addVoice(bool no_context, vector<float> voice_data) {
+void STT::addVoice(vector<float> voice_data) {
   {
     lock_guard<mutex> lock(queueMutex);
-    voiceQueue.push({voice_data, no_context});
+    voiceQueue.push(voice_data);
   }
   cv.notify_one();
 }
@@ -117,7 +108,7 @@ void STT::stop() {
 // Queue management functions
 void STT::clearVoice() {
   lock_guard<mutex> lock(queueMutex);
-  queue<Voice> empty;
+  queue<vector<float>> empty;
   swap(voiceQueue, empty);
 }
 
@@ -127,7 +118,7 @@ auto STT::removeVoice(size_t index) -> bool {
     return false;
 
   // Convert queue to deque for random access
-  deque<Voice> tempDeque;
+  deque<vector<float>> tempDeque;
   while (!voiceQueue.empty()) {
     tempDeque.push_back(voiceQueue.front());
     voiceQueue.pop();
@@ -152,7 +143,7 @@ void STT::setTriggerMethod(TriggerMethod triggerMethod) {
   cv.notify_one();
 }
 
-auto STT::inference(bool no_context, vector<float> pcmf32) -> string {
+auto STT::inference(vector<float> pcmf32) -> string {
   string result;
   spdlog::info("inference language is {}", language);
   spdlog::info("inference wparams.language is {}", wparams.language);

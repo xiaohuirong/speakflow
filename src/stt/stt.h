@@ -13,20 +13,15 @@ public:
 
   using Callback = function<void(const string &)>;
 
-  struct Voice {
-    vector<float> voice_data;
-    bool no_context;
-  };
-
   STT(whisper_context_params &cparams, whisper_full_params &wparams,
-      string path_model, string language, Callback callback);
+      string path_model, string language, bool no_context, Callback callback);
 
   ~STT();
-  auto inference(bool no_context, vector<float> voice_data) -> string;
+  auto inference(vector<float> voice_data) -> string;
 
   void start();
   void stop();
-  void addVoice(bool no_context, vector<float> voice_data);
+  void addVoice(vector<float> voice_data);
 
   // Queue management functions
   void clearVoice();
@@ -38,8 +33,8 @@ private:
 
   Callback whisper_callback;
 
-  queue<Voice> voiceQueue; // Message queue
-  bool stopInference;      // Whether to stop the voice system
+  queue<vector<float>> voiceQueue; // Message queue
+  bool stopInference;              // Whether to stop the voice system
   TriggerMethod triggerMethod = AUTO_TRIGGER;
 
   mutex queueMutex;      // Mutex to protect the message queue
@@ -53,6 +48,8 @@ private:
   int n_iter = 0;
   whisper_context_params cparams;
   whisper_context *ctx;
+
+  bool no_context = false;
 
   vector<whisper_token> prompt_tokens;
 };

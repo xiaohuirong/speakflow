@@ -36,7 +36,7 @@ MainWindow::MainWindow(QWidget *parent, const whisper_params &params)
 
   sentenceCallback = [this](const vector<float> &sen) {
     spdlog::info("Detected sentense with {}", sen.size(), " samples");
-    stt->addVoice(this->params.no_context, sen);
+    stt->addVoice(sen);
   };
   sentense.setSentenceCallback(sentenceCallback);
   if (!sentense.initialize()) {
@@ -64,7 +64,8 @@ MainWindow::MainWindow(QWidget *parent, const whisper_params &params)
   spdlog::info("mainwindow.h params.language is: {}", params.language);
   set_params();
   stt = make_unique<STT>(this->cparams, this->wparams, params.model,
-                         params.language, whisperCallback);
+                         params.language, this->params.no_context,
+                         whisperCallback);
 
   stt->start();
 
