@@ -19,7 +19,7 @@ public:
            int capture_id = -1, bool is_microphone = SDL_TRUE);
   ~Sentense();
 
-  bool initialize();
+  auto initialize() -> bool;
   void start();
   void stop();
   void setSentenceCallback(SentenceCallback callback);
@@ -27,6 +27,7 @@ public:
 private:
   void processAudio();
   void checkForSentences();
+  [[nodiscard]] auto extractAudioForVAD() const -> vector<float>;
 
   // Configuration
   const std::string m_model_path;

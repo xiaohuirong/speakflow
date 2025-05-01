@@ -70,6 +70,31 @@ void Sentense::start() {
 void Sentense::stop() {
   m_running = false;
   m_audio_capture.pause();
+
+  // 处理残留音频
+  std::lock_guard<std::mutex> lock(m_buffer_mutex);
+
+  if (m_buffer_fill == 0 || !m_callback) {
+    m_buffer_pos = 0;
+    return;
+  }
+
+  // 从缓冲区中提取数据用于VAD处理
+  std::vector<float> audio_for_vad = extractAudioForVAD();
+
+  // 使用VAD处理音频
+  m_vad.process(audio_for_vad);
+  auto speeches = m_vad.get_speech_timestamps();
+
+  if (!speeches.empty()) {
+    std::vector<float> sentence(audio_for_vad.begin() + speeches[0].start,
+                                audio_for_vad.begin() + speeches[0].end);
+    m_callback(sentence);
+  }
+
+  m_buffer_fill = 0;
+  m_buffer_pos = 0;
+  m_vad.reset();
 }
 
 void Sentense::setSentenceCallback(SentenceCallback callback) {
@@ -115,6 +140,25 @@ void Sentense::processAudio() {
       std::min(m_buffer_fill + samples_to_add, m_ring_buffer.size());
 }
 
+// unsafe operation
+auto Sentense::extractAudioForVAD() const -> vector<float> {
+  vector<float> audio_for_vad;
+  audio_for_vad.reserve(m_buffer_fill);
+
+  if (m_buffer_pos >= m_buffer_fill) {
+    audio_for_vad.assign(m_ring_buffer.begin() + (m_buffer_pos - m_buffer_fill),
+                         m_ring_buffer.begin() + m_buffer_pos);
+  } else {
+    size_t first_chunk = m_ring_buffer.size() - (m_buffer_fill - m_buffer_pos);
+    audio_for_vad.assign(m_ring_buffer.begin() + first_chunk,
+                         m_ring_buffer.end());
+    audio_for_vad.insert(audio_for_vad.end(), m_ring_buffer.begin(),
+                         m_ring_buffer.begin() + m_buffer_pos);
+  }
+
+  return std::move(audio_for_vad); // 显式移动
+}
+
 void Sentense::checkForSentences() {
   std::lock_guard<std::mutex> lock(m_buffer_mutex);
 
@@ -122,21 +166,7 @@ void Sentense::checkForSentences() {
     return;
 
   // 从缓冲区中提取数据用于VAD处理
-  std::vector<float> audio_for_vad;
-  audio_for_vad.reserve(m_buffer_fill);
-
-  if (m_buffer_pos >= m_buffer_fill) {
-    // 数据没有环绕
-    audio_for_vad.assign(m_ring_buffer.begin() + (m_buffer_pos - m_buffer_fill),
-                         m_ring_buffer.begin() + m_buffer_pos);
-  } else {
-    // 数据有环绕
-    size_t first_chunk = m_ring_buffer.size() - (m_buffer_fill - m_buffer_pos);
-    audio_for_vad.assign(m_ring_buffer.begin() + first_chunk,
-                         m_ring_buffer.end());
-    audio_for_vad.insert(audio_for_vad.end(), m_ring_buffer.begin(),
-                         m_ring_buffer.begin() + m_buffer_pos);
-  }
+  std::vector<float> audio_for_vad = extractAudioForVAD();
 
   // 使用VAD处理音频
   m_vad.process(audio_for_vad);
