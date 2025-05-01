@@ -136,7 +136,7 @@ int main() {
   // std::this_thread::sleep_for(std::chrono::milliseconds(100));
 
   spdlog::info("###########manual trigger test############");
-  stt.setAutoProcessing(0);
+  stt.setTriggerMethod(0);
   spdlog::info("stt set auto process 0");
 
   stt.addVoice(false, audioData[0]);
@@ -148,7 +148,7 @@ int main() {
   stt.removeVoice(1);
   spdlog::info("stt remove index 1");
 
-  stt.setAutoProcessing(1);
+  stt.setTriggerMethod(1);
   spdlog::info("stt process once");
 
   // std::this_thread::sleep_for(std::chrono::milliseconds(100));
@@ -156,7 +156,7 @@ int main() {
   spdlog::info("###########auto trigger test############");
   stt.addVoice(false, audioData[2]);
   spdlog::info("stt addVoice 2");
-  // stt.setAutoProcessing(-1);
+  // stt.setTriggerMethod(-1);
   // spdlog::info("stt set auto process -1");
 
   stt.addVoice(false, audioData[2]);
@@ -165,7 +165,7 @@ int main() {
   stt.addVoice(false, audioData[3]);
   spdlog::info("stt addVoice 3");
 
-  // stt.setAutoProcessing(1);
+  // stt.setTriggerMethod(1);
   // spdlog::info("stt process once");
 
   while (true) {

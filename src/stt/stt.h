@@ -29,9 +29,7 @@ public:
   // Queue management functions
   void clearVoice();
   auto removeVoice(size_t index) -> bool;
-
-  // Manual trigger control
-  void setAutoProcessing(int autoProcess);
+  void setTriggerMethod(int triggerMethod);
 
 private:
   void processVoices();
@@ -40,7 +38,7 @@ private:
 
   queue<Voice> voiceQueue; // Message queue
   bool stopInference;      // Whether to stop the voice system
-  int autoProcessing =
+  int triggerMethod =
       -1; // -1 : infinity time, 0: not process, > 0: process time
 
   mutex queueMutex;      // Mutex to protect the message queue
