@@ -21,6 +21,15 @@ public:
       : dataType(std::move(type)), audio(std::move(audio_data)) {}
 };
 
+class MessageAddedEvent : public Event {
+public:
+  std::string dataType;
+  std::vector<float> message;
+
+  MessageAddedEvent(std::string type, std::vector<float> msg)
+      : dataType(std::move(type)), message(std::move(msg)) {}
+};
+
 // 错误事件
 class ErrorOccurredEvent : public Event {
 public:

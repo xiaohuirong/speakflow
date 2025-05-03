@@ -1,4 +1,5 @@
 #include "common_stt.h"
+#include "events.h"
 #include "stt.h"
 #include <chrono>
 #include <cstdint>
@@ -128,10 +129,12 @@ auto main() -> int {
   string model = "../../models/ggml-large-v3.bin";
   string language = "zh";
 
+  auto eventBus = std::make_shared<EventBus>();
+
   WhisperCallback whisperCallback(
       [](const string &text) { spdlog::info(text); });
 
-  STT stt(cparams, wparams, model, language, false, whisperCallback);
+  STT stt(cparams, wparams, model, language, false, whisperCallback, eventBus);
   STTOperations sttcallbacks = stt.getOperations();
 
   // 初始化测试用的前端回调函数

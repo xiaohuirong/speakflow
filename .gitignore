@@ -5,3 +5,4 @@ models
 *.wav
 src/sentense/wav
 src/sentense/event
+src/stt/event

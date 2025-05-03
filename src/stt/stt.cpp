@@ -1,6 +1,7 @@
 #include "stt.h"
 #include "common-whisper.h"
 
+#include "events.h"
 #include <deque>
 #include <print>
 #include <spdlog/common.h>
@@ -11,10 +12,12 @@
 #include <whisper.h>
 
 STT::STT(whisper_context_params &cparams, whisper_full_params &wparams,
-         string path_model, string language, bool no_context, Callback callback)
+         string path_model, string language, bool no_context, Callback callback,
+         std::shared_ptr<EventBus> bus)
     : stopInference(false), whisper_callback(std::move(callback)),
       cparams(cparams), path_model(std::move(path_model)),
-      language(std::move(language)), wparams(wparams), no_context(no_context) {
+      language(std::move(language)), wparams(wparams), no_context(no_context),
+      eventBus(std::move(bus)) {
 
   // wparams.language is just a pointer!
   this->wparams.language = this->language.c_str();
@@ -32,6 +35,24 @@ STT::STT(whisper_context_params &cparams, whisper_full_params &wparams,
               __func__);
     }
   }
+
+  eventBus->subscribe<StartServiceEvent>(
+      [this](const std::shared_ptr<Event> &event) {
+        auto startEvent = std::static_pointer_cast<StartServiceEvent>(event);
+        if (startEvent->serviceName == "stt") {
+          start();
+          eventBus->publish<ServiceStatusEvent>("stt", true);
+        }
+      });
+
+  eventBus->subscribe<StopServiceEvent>(
+      [this](const std::shared_ptr<Event> &event) {
+        auto stopEvent = std::static_pointer_cast<StopServiceEvent>(event);
+        if (stopEvent->serviceName == "stt") {
+          stop();
+          eventBus->publish<ServiceStatusEvent>("stt", false);
+        }
+      });
 }
 
 void STT::setCardWidgetCallbacks(const CardWidgetCallbacks &callbacks) {

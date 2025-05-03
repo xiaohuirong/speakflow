@@ -75,7 +75,7 @@ MainWindow::MainWindow(QWidget *parent, const whisper_params &params)
   set_params();
   stt = make_unique<STT>(this->cparams, this->wparams, params.model,
                          params.language, this->params.no_context,
-                         whisperCallback);
+                         whisperCallback, eventBus);
 
   stt->start();
 

@@ -3,6 +3,11 @@ cmake_minimum_required(VERSION 3.10)
 set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+if(CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
+  message(STATUS "Building module_a standalone")
+  add_subdirectory(../event ../event)
+endif()
+
 # Find required dependencies
 find_package(whisper QUIET)
 if(NOT whisper_FOUND)
@@ -31,11 +36,11 @@ target_include_directories(stt PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}
                                       ${WHISPER_INCLUDE_DIR})
 
 # Link libraries
-target_link_libraries(stt PUBLIC fmt spdlog ${WHISPER_LIB})
+target_link_libraries(stt PUBLIC fmt spdlog ${WHISPER_LIB} event)
 
 if(BUILD_MODULE_TEST)
   # Add the executable
   add_executable(stt_test test.cpp ${STT_SOURCES})
   # Link Qt6 libraries
-  target_link_libraries(stt_test PRIVATE fmt spdlog ${WHISPER_LIB})
+  target_link_libraries(stt_test PRIVATE fmt spdlog ${WHISPER_LIB} event)
 endif()

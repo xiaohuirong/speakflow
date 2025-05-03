@@ -1,5 +1,6 @@
 #pragma once
 #include "common_stt.h"
+#include "eventbus.h"
 #include <condition_variable>
 #include <functional>
 #include <queue>
@@ -13,7 +14,8 @@ public:
   using Callback = function<void(const string &)>;
 
   STT(whisper_context_params &cparams, whisper_full_params &wparams,
-      string path_model, string language, bool no_context, Callback callback);
+      string path_model, string language, bool no_context, Callback callback,
+      std::shared_ptr<EventBus> eventBus);
 
   ~STT();
   auto inference(vector<float> voice_data) -> string;
@@ -34,6 +36,10 @@ public:
 
 private:
   void processVoices();
+
+  std::shared_ptr<EventBus> eventBus;
+
+  bool is_running = true;
 
   Callback whisper_callback;
   CardWidgetCallbacks callbacks;
