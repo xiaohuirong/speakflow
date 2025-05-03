@@ -1,7 +1,7 @@
 #ifndef CARDMAN_H
 #define CARDMAN_H
 
-#include "events.h"
+#include "eventbus.h"
 #include "flowlayout.h"
 #include <QCheckBox>
 #include <QFrame>

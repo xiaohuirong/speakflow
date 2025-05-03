@@ -17,6 +17,22 @@ auto main(int argc, char *argv[]) -> int {
 
   auto eventBus = std::make_shared<EventBus>();
 
+  eventBus->subscribe<StartServiceEvent>(
+      [eventBus](const std::shared_ptr<Event> &event) {
+        auto startEvent = std::static_pointer_cast<StartServiceEvent>(event);
+        if (startEvent->serviceName == "sentense") {
+          eventBus->publish<ServiceStatusEvent>("sentense", true);
+        }
+      });
+
+  eventBus->subscribe<StopServiceEvent>(
+      [eventBus](const std::shared_ptr<Event> &event) {
+        auto stopEvent = std::static_pointer_cast<StopServiceEvent>(event);
+        if (stopEvent->serviceName == "sentense") {
+          eventBus->publish<ServiceStatusEvent>("sentense", false);
+        }
+      });
+
   // 创建卡片管理部件
   auto *cardMan = new CardMan(eventBus);
   mainLayout->addWidget(cardMan, 1);

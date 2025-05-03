@@ -6,6 +6,8 @@
 #include <QPushButton>
 #include <QSpacerItem>
 #include <algorithm>
+#include <iostream>
+#include <memory>
 #include <qpushbutton.h>
 
 CardMan::CardMan(std::shared_ptr<EventBus> bus, QWidget *parent)
@@ -40,6 +42,25 @@ CardMan::CardMan(std::shared_ptr<EventBus> bus, QWidget *parent)
 
   eventBus->subscribe<AudioSentEvent>(
       [this](const std::shared_ptr<Event> &event) { clearCards(); });
+
+  eventBus->subscribe<ServiceStatusEvent>(
+      [this](const std::shared_ptr<Event> &event) {
+        auto serviceEvent = std::static_pointer_cast<ServiceStatusEvent>(event);
+
+        std::cout << "receive service status event "
+                  << serviceEvent->serviceName << std::endl;
+        if (serviceEvent->serviceName == "sentense") {
+          if (serviceEvent->isRunning) {
+            isRecording = true;
+            recordButton->setChecked(true);
+            std::cout << "set to true" << std::endl;
+          } else {
+            isRecording = false;
+            recordButton->setChecked(false);
+            std::cout << "set to false" << std::endl;
+          }
+        }
+      });
 }
 
 void CardMan::setupControlButtons() {
@@ -54,13 +75,14 @@ void CardMan::setupControlButtons() {
   // recordButton->setIconSize(QSize(24, 24));
   // recordButton->setFixedSize(50, 50);
   recordButton->setCheckable(true);
+  recordButton->setChecked(false);
 
   // Add auto trigger checkbox with better styling
   autoTriggerCheckBox = new QCheckBox("Auto Mode", controlPanel);
-  recordButton->setCheckable(false);
 
   sendButton = new QPushButton(controlPanel);
   sendButton->setText("发送");
+  sendButton->setCheckable(false);
 
   // Add spacer to push items to the left
   controlLayout->addWidget(recordButton);
@@ -72,14 +94,11 @@ void CardMan::setupControlButtons() {
 
   // 修改信号连接，改为点击切换状态
   connect(recordButton, &QPushButton::clicked, [this]() {
-    if (autoTriggerCheckBox->isChecked())
-      return;
     if (isRecording) {
-      eventBus->publish<StartServiceEvent>("sentense");
-    } else {
       eventBus->publish<StopServiceEvent>("sentense");
+    } else {
+      eventBus->publish<StartServiceEvent>("sentense");
     }
-    isRecording = !isRecording;
   });
 
   connect(sendButton, &QPushButton::clicked,
@@ -88,10 +107,10 @@ void CardMan::setupControlButtons() {
   connect(autoTriggerCheckBox, &QCheckBox::checkStateChanged,
           [this](Qt::CheckState state) {
             if (state == Qt::Checked) {
-              recordButton->setEnabled(false);
+              sendButton->setEnabled(false);
               eventBus->publish<AutoModeSetEvent>("stt", true);
             } else {
-              recordButton->setEnabled(true);
+              sendButton->setEnabled(true);
               eventBus->publish<AutoModeSetEvent>("stt", false);
             }
           });
