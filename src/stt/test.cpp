@@ -138,7 +138,7 @@ auto main() -> int {
 
   STT stt(cparams, wparams, model, language, false, eventBus);
 
-  stt.start();
+  eventBus->publish<StartServiceEvent>("stt");
   spdlog::info("stt start");
 
   // wait thread into lock
@@ -182,7 +182,7 @@ auto main() -> int {
     std::this_thread::sleep_for(std::chrono::milliseconds(100));
   }
 
-  stt.stop();
+  eventBus->publish<StopServiceEvent>("stt");
   spdlog::info("stt stop");
 
   return 0;

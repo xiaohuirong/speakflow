@@ -36,9 +36,6 @@ MainWindow::MainWindow(QWidget *parent, const whisper_params &params)
   page->setWebChannel(channel);
   ui->preview->setUrl(QUrl("qrc:/index.html"));
 
-  connect(ui->clickButton, &QPushButton::clicked, this,
-          &MainWindow::handleClick);
-
   if (!sentense.initialize()) {
     spdlog::error("sentense initialize failed");
   }
@@ -76,7 +73,7 @@ MainWindow::MainWindow(QWidget *parent, const whisper_params &params)
   stt = make_unique<STT>(this->cparams, this->wparams, params.model,
                          params.language, this->params.no_context, eventBus);
 
-  stt->start();
+  eventBus->publish<StartServiceEvent>("stt");
 
   chatCallback = [this](const string &message, bool is_response) {
     QMetaObject::invokeMethod(this, [this, message, is_response]() {
@@ -124,19 +121,17 @@ MainWindow::~MainWindow() {
   if (is_running) {
     eventBus->publish<StopServiceEvent>("sentense");
   }
-  stt->stop();
+  eventBus->publish<StopServiceEvent>("stt");
   chat->stop();
 }
 
 void MainWindow::handleClick() {
   if (!is_running) {
     is_running = true;
-    ui->clickButton->setText("停止");
     ui->statusbar->showMessage("Whisper实时记录中...");
     eventBus->publish<StartServiceEvent>("sentense");
   } else {
     is_running = false;
-    ui->clickButton->setText("启动");
     ui->statusbar->showMessage("Whisper未启动...");
     eventBus->publish<StopServiceEvent>("sentense");
   }

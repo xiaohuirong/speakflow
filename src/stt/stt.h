@@ -14,14 +14,14 @@ public:
   STT(whisper_context_params &cparams, whisper_full_params &wparams,
       string path_model, string language, bool no_context,
       std::shared_ptr<EventBus> eventBus);
-
   ~STT();
+
+private:
   auto inference(vector<float> voice_data) -> string;
 
   void start();
   void stop();
 
-private:
   // Queue management functions
   auto getQueueSizes() const -> vector<size_t>;
   void addVoice(vector<float> voice_data);

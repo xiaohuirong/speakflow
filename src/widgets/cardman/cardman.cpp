@@ -31,7 +31,8 @@ void CardMan::setEventBus(std::shared_ptr<EventBus> bus) {
   eventBus->subscribe<AudioAddedEvent>(
       [this](const std::shared_ptr<Event> &event) {
         auto audioEvent = std::static_pointer_cast<AudioAddedEvent>(event);
-        addCard(QString::number(audioEvent->audio.size()) + "S");
+        addCard(QString::number(audioEvent->audio.size() / 16000.0, 'f', 1) +
+                "S");
       });
 
   eventBus->subscribe<AudioRemovedEvent>(
