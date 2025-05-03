@@ -1,4 +1,5 @@
 #include "mainwindow.h"
+#include "cardman.h"
 #include "events.h"
 #include "monitorwindow.h"
 #include "previewpage.h"
@@ -19,9 +20,9 @@ MainWindow::MainWindow(QWidget *parent, const whisper_params &params)
       wparams(whisper_full_default_params(params.beam_size > 1
                                               ? WHISPER_SAMPLING_BEAM_SEARCH
                                               : WHISPER_SAMPLING_GREEDY)) {
-
   ui->setupUi(this);
   ui->statusbar->showMessage("Whisper未启动...");
+  ui->audio_man->setEventBus(eventBus);
 
   monitorwindow = make_unique<MonitorWindow>(this);
   connect(ui->openmonitor, &QPushButton::clicked, this,
@@ -38,14 +39,6 @@ MainWindow::MainWindow(QWidget *parent, const whisper_params &params)
   connect(ui->clickButton, &QPushButton::clicked, this,
           &MainWindow::handleClick);
 
-  eventBus->subscribe<AudioAddedEvent>(
-      [this](const std::shared_ptr<Event> &event) {
-        auto dataEvent = std::static_pointer_cast<AudioAddedEvent>(event);
-        auto sen = dataEvent->audio;
-
-        spdlog::info("Detected sentense with {}", sen.size(), " samples");
-        stt->addVoice(sen);
-      });
   if (!sentense.initialize()) {
     spdlog::error("sentense initialize failed");
   }

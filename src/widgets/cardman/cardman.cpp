@@ -10,8 +10,7 @@
 #include <qpushbutton.h>
 #include <spdlog/spdlog.h>
 
-CardMan::CardMan(std::shared_ptr<EventBus> bus, QWidget *parent)
-    : QWidget(parent), eventBus(std::move(bus)) {
+CardMan::CardMan(QWidget *parent) : QWidget(parent) {
   scrollArea = new QScrollArea(this);
   cardsContainer = new QWidget();
   cardsLayout = new FlowLayout(cardsContainer, 10, 10, 10);
@@ -24,11 +23,15 @@ CardMan::CardMan(std::shared_ptr<EventBus> bus, QWidget *parent)
   setupControlButtons();
   layout->addWidget(scrollArea);
   layout->setContentsMargins(0, 0, 0, 0);
+}
+
+void CardMan::setEventBus(std::shared_ptr<EventBus> bus) {
+  eventBus = std::move(bus);
 
   eventBus->subscribe<AudioAddedEvent>(
       [this](const std::shared_ptr<Event> &event) {
         auto audioEvent = std::static_pointer_cast<AudioAddedEvent>(event);
-        addCard(QString::number(audioEvent->audio[0], 'f', 0) + "S");
+        addCard(QString::number(audioEvent->audio.size()) + "S");
       });
 
   eventBus->subscribe<AudioRemovedEvent>(
@@ -38,9 +41,6 @@ CardMan::CardMan(std::shared_ptr<EventBus> bus, QWidget *parent)
       });
 
   eventBus->subscribe<AudioClearedEvent>(
-      [this](const std::shared_ptr<Event> &event) { clearCards(); });
-
-  eventBus->subscribe<AudioSentEvent>(
       [this](const std::shared_ptr<Event> &event) { clearCards(); });
 
   eventBus->subscribe<ServiceStatusEvent>(

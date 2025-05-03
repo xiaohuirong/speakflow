@@ -139,6 +139,8 @@ void STT::processVoices() {
       }
     }
 
+    eventBus->publish<AudioClearedEvent>();
+
     // if (callbacks.onVoiceCleared) {
     //   callbacks.onVoiceCleared();
     // }

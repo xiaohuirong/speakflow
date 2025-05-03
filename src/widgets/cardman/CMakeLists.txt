@@ -19,7 +19,7 @@ set(CMAKE_AUTOUIC ON)
 set(CMAKE_AUTORCC ON)
 
 set(CARDMAN_SOURCES cardman.h cardman.cpp flowlayout.cpp)
-add_library(cardman STATIC ${cardman_SOURCES})
+add_library(cardman STATIC ${CARDMAN_SOURCES})
 # Include directories
 target_include_directories(cardman PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 target_link_libraries(cardman PUBLIC Qt6::Widgets event fmt spdlog)

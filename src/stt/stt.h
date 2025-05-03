@@ -21,15 +21,14 @@ public:
   void start();
   void stop();
 
+private:
   // Queue management functions
   auto getQueueSizes() const -> vector<size_t>;
-
   void addVoice(vector<float> voice_data);
   auto removeVoice(size_t index) -> bool;
   void clearVoice();
   void setTriggerMethod(TriggerMethod triggerMethod);
 
-private:
   void processVoices();
 
   std::shared_ptr<EventBus> eventBus;
@@ -38,7 +37,7 @@ private:
 
   queue<vector<float>> voiceQueue; // Message queue
   bool stopInference;              // Whether to stop the voice system
-  TriggerMethod triggerMethod = AUTO_TRIGGER;
+  TriggerMethod triggerMethod = NO_TRIGGER;
 
   mutable mutex queueMutex; // Mutex to protect the message queue
   condition_variable cv;    // Condition variable for thread synchronization

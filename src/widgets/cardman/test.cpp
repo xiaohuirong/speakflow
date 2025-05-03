@@ -34,7 +34,8 @@ auto main(int argc, char *argv[]) -> int {
       });
 
   // 创建卡片管理部件
-  auto *cardMan = new CardMan(eventBus);
+  auto *cardMan = new CardMan();
+  cardMan->setEventBus(eventBus);
   mainLayout->addWidget(cardMan, 1);
 
   // 创建控制面板

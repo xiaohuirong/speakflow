@@ -11,6 +11,7 @@ add_subdirectory(src/chat)
 add_subdirectory(src/stt)
 add_subdirectory(src/parse)
 add_subdirectory(src/widgets/queman)
+add_subdirectory(src/widgets/cardman)
 
 find_package(Qt6 REQUIRED COMPONENTS Widgets WebEngineWidgets Charts)
 find_package(spdlog REQUIRED)
@@ -37,4 +38,5 @@ target_link_libraries(
           stt
           chat
           parse
-          event)
+          event
+          cardman)

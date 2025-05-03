@@ -13,8 +13,10 @@
 class CardMan : public QWidget {
   Q_OBJECT
 public:
-  explicit CardMan(std::shared_ptr<EventBus> bus, QWidget *parent = nullptr);
+  explicit CardMan(QWidget *parent = nullptr);
   ~CardMan() override;
+
+  void setEventBus(std::shared_ptr<EventBus> bus);
 
 private slots:
   void addCard(const QString &text);
