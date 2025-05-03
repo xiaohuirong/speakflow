@@ -1,4 +1,5 @@
 #include "mainwindow.h"
+#include "events.h"
 #include "monitorwindow.h"
 #include "previewpage.h"
 #include "qpushbutton.h"
@@ -12,10 +13,13 @@
 
 MainWindow::MainWindow(QWidget *parent, const whisper_params &params)
     : QMainWindow(parent), ui(make_unique<Ui::MainWindow>()), params(params),
-      sentense(params.vad_model), cparams(whisper_context_default_params()),
+      eventBus(std::make_shared<EventBus>()),
+      sentense(params.vad_model, eventBus),
+      cparams(whisper_context_default_params()),
       wparams(whisper_full_default_params(params.beam_size > 1
                                               ? WHISPER_SAMPLING_BEAM_SEARCH
                                               : WHISPER_SAMPLING_GREEDY)) {
+
   ui->setupUi(this);
   ui->statusbar->showMessage("Whisper未启动...");
 
@@ -34,11 +38,14 @@ MainWindow::MainWindow(QWidget *parent, const whisper_params &params)
   connect(ui->clickButton, &QPushButton::clicked, this,
           &MainWindow::handleClick);
 
-  sentenceCallback = [this](const vector<float> &sen) {
-    spdlog::info("Detected sentense with {}", sen.size(), " samples");
-    stt->addVoice(sen);
-  };
-  sentense.setSentenceCallback(sentenceCallback);
+  eventBus->subscribe<AudioAddedEvent>(
+      [this](const std::shared_ptr<Event> &event) {
+        auto dataEvent = std::static_pointer_cast<AudioAddedEvent>(event);
+        auto sen = dataEvent->audio;
+
+        spdlog::info("Detected sentense with {}", sen.size(), " samples");
+        stt->addVoice(sen);
+      });
   if (!sentense.initialize()) {
     spdlog::error("sentense initialize failed");
   }

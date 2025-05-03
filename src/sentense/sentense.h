@@ -6,23 +6,21 @@
 #elif defined(USE_QT_AUDIO)
 #include "qtaudio.h"
 #endif
+#include "eventbus.h"
 #include "silero-vad-onnx.h"
-#include <functional>
 #include <string>
 #include <vector>
 
 class Sentense {
 public:
-  using SentenceCallback = std::function<void(const std::vector<float> &)>;
-
-  Sentense(const std::string &model_path, int sample_rate = 16000,
-           int capture_id = -1, bool is_microphone = SDL_TRUE);
+  Sentense(const std::string &model_path, std::shared_ptr<EventBus> bus,
+           int sample_rate = 16000, int capture_id = -1,
+           bool is_microphone = SDL_TRUE);
   ~Sentense();
 
   auto initialize() -> bool;
   void start();
   void stop();
-  void setSentenceCallback(SentenceCallback callback);
 
 private:
   void processAudio();
@@ -42,7 +40,7 @@ private:
   AudioAsync m_audio_capture;
 #endif
   VadIterator m_vad;
-  SentenceCallback m_callback;
+  std::shared_ptr<EventBus> eventBus;
 
   // Buffers and state
   std::vector<float> m_ring_buffer;

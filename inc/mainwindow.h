@@ -3,12 +3,12 @@
 
 #include "chat.h"
 #include "document.h"
+#include "eventbus.h"
 #include "monitorwindow.h"
 #include "parse.h"
 #include "previewpage.h"
 #include "sentense.h"
 #include "stt.h"
-#include "common_stt.h"
 
 #include <QMainWindow>
 #include <QString>
@@ -32,7 +32,6 @@ public:
   ~MainWindow() override;
 
 private:
-  using SentenceCallback = std::function<void(const std::vector<float> &)>;
   using ChatCallback = std::function<void(const std::string &, bool)>;
   using WhisperCallback = std::function<void(const std::string &)>;
   using QueueCallback = std::function<void(const vector<size_t> &)>;
@@ -40,6 +39,8 @@ private:
   whisper_params params;
   whisper_full_params wparams;
   whisper_context_params cparams;
+
+  std::shared_ptr<EventBus> eventBus;
 
   Sentense sentense;
   bool is_running = false;
@@ -53,7 +54,6 @@ private:
 
   ChatCallback chatCallback;
   WhisperCallback whisperCallback;
-  SentenceCallback sentenceCallback;
 
   void set_params();
 

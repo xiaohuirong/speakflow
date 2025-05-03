@@ -1,14 +1,15 @@
 // vad_processor.cpp
 #include "sentense.h"
+#include "events.h"
 #include <algorithm>
 #include <chrono>
 #include <iostream>
 #include <thread>
 
-Sentense::Sentense(const std::string &model_path, int sample_rate,
-                   int capture_id, bool is_microphone)
-    : m_model_path(model_path), m_sample_rate(sample_rate),
-      m_capture_id(capture_id),
+Sentense::Sentense(const std::string &model_path, std::shared_ptr<EventBus> bus,
+                   int sample_rate, int capture_id, bool is_microphone)
+    : m_model_path(model_path), eventBus(std::move(bus)),
+      m_sample_rate(sample_rate), m_capture_id(capture_id),
       m_is_microphone(is_microphone ? SDL_TRUE : SDL_FALSE),
       m_audio_capture(BUFFER_DURATION_MS),
       m_vad(model_path, sample_rate, 32, 0.5, MIN_SENTENCE_GAP_MS, 30, 250) {
@@ -74,7 +75,7 @@ void Sentense::stop() {
   // 处理残留音频
   std::lock_guard<std::mutex> lock(m_buffer_mutex);
 
-  if (m_buffer_fill == 0 || !m_callback) {
+  if (m_buffer_fill == 0 || !eventBus) {
     m_buffer_pos = 0;
     return;
   }
@@ -89,16 +90,12 @@ void Sentense::stop() {
   if (!speeches.empty()) {
     std::vector<float> sentence(audio_for_vad.begin() + speeches[0].start,
                                 audio_for_vad.begin() + speeches[0].end);
-    m_callback(sentence);
+    eventBus->publish<AudioAddedEvent>("audio", sentence);
   }
 
   m_buffer_fill = 0;
   m_buffer_pos = 0;
   m_vad.reset();
-}
-
-void Sentense::setSentenceCallback(SentenceCallback callback) {
-  m_callback = callback;
 }
 
 void Sentense::processAudio() {
@@ -162,7 +159,7 @@ auto Sentense::extractAudioForVAD() const -> vector<float> {
 void Sentense::checkForSentences() {
   std::lock_guard<std::mutex> lock(m_buffer_mutex);
 
-  if (m_buffer_fill == 0 || !m_callback)
+  if (m_buffer_fill == 0 || !eventBus)
     return;
 
   // 从缓冲区中提取数据用于VAD处理
@@ -194,7 +191,7 @@ void Sentense::checkForSentences() {
                                 audio_for_vad.begin() + end);
 
     // 通过回调返回句子
-    m_callback(sentence);
+    eventBus->publish<AudioAddedEvent>("audio", sentence);
 
     start = speeches[i + 1].start;
     end = speeches[i + 1].end;
@@ -203,7 +200,7 @@ void Sentense::checkForSentences() {
   if (m_buffer_fill - end >= PROCESS_INTERVAL_MS * m_sample_rate / 1000) {
     std::vector<float> sentence(audio_for_vad.begin() + start,
                                 audio_for_vad.begin() + end);
-    m_callback(sentence);
+    eventBus->publish<AudioAddedEvent>("audio", sentence);
 
     m_buffer_fill = 0;
     m_buffer_pos = 0;

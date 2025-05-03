@@ -4,6 +4,8 @@ project(speakflow)
 set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
 
+add_subdirectory(src/event)
+
 add_subdirectory(src/sentense)
 add_subdirectory(src/chat)
 add_subdirectory(src/stt)
@@ -34,4 +36,5 @@ target_link_libraries(
           sentense
           stt
           chat
-          parse)
+          parse
+          event)

@@ -1,3 +1,4 @@
+#include "events.h"
 #include "sentense.h"
 #include <atomic>
 #include <chrono>
@@ -100,16 +101,20 @@ auto main() -> int {
   signal(SIGINT, signalHandler);
   signal(SIGTERM, signalHandler);
 
+  auto eventBus = std::make_shared<EventBus>();
+
   ensureWavDirectoryExists();
 
-  Sentense sen("../../models/silero_vad.onnx");
+  Sentense sen("../../models/silero_vad.onnx", eventBus);
 
   if (!sen.initialize()) {
     std::cerr << "Failed to initialize sen processor" << std::endl;
     return 1;
   }
 
-  sen.setSentenceCallback([](const std::vector<float> &sentence) {
+  eventBus->subscribe<AudioAddedEvent>([](const std::shared_ptr<Event> &event) {
+    auto dataEvent = std::static_pointer_cast<AudioAddedEvent>(event);
+    auto sentence = dataEvent->audio;
     static int counter = 0;
     if (!g_running)
       return; // 如果收到停止信号，不再处理新句子
