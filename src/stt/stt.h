@@ -1,8 +1,6 @@
 #pragma once
-#include "common_stt.h"
 #include "eventbus.h"
 #include <condition_variable>
-#include <functional>
 #include <queue>
 #include <vector>
 #include <whisper.h>
@@ -11,10 +9,10 @@ using namespace std;
 
 class STT {
 public:
-  using Callback = function<void(const string &)>;
+  enum TriggerMethod { AUTO_TRIGGER = -1, NO_TRIGGER = 0, ONCE_TRIGGER = 1 };
 
   STT(whisper_context_params &cparams, whisper_full_params &wparams,
-      string path_model, string language, bool no_context, Callback callback,
+      string path_model, string language, bool no_context,
       std::shared_ptr<EventBus> eventBus);
 
   ~STT();
@@ -25,9 +23,6 @@ public:
 
   // Queue management functions
   auto getQueueSizes() const -> vector<size_t>;
-  auto getOperations() -> STTOperations;
-
-  void setCardWidgetCallbacks(const CardWidgetCallbacks &callbacks);
 
   void addVoice(vector<float> voice_data);
   auto removeVoice(size_t index) -> bool;
@@ -40,9 +35,6 @@ private:
   std::shared_ptr<EventBus> eventBus;
 
   bool is_running = true;
-
-  Callback whisper_callback;
-  CardWidgetCallbacks callbacks;
 
   queue<vector<float>> voiceQueue; // Message queue
   bool stopInference;              // Whether to stop the voice system

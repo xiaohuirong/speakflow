@@ -108,7 +108,7 @@ void Sentense::stop() {
   if (!speeches.empty()) {
     std::vector<float> sentence(audio_for_vad.begin() + speeches[0].start,
                                 audio_for_vad.begin() + speeches[0].end);
-    eventBus->publish<AudioAddedEvent>("audio", sentence);
+    eventBus->publish<AudioAddedEvent>(sentence);
   }
 
   m_buffer_fill = 0;
@@ -209,7 +209,7 @@ void Sentense::checkForSentences() {
                                 audio_for_vad.begin() + end);
 
     // 通过回调返回句子
-    eventBus->publish<AudioAddedEvent>("audio", sentence);
+    eventBus->publish<AudioAddedEvent>(sentence);
 
     start = speeches[i + 1].start;
     end = speeches[i + 1].end;
@@ -218,7 +218,7 @@ void Sentense::checkForSentences() {
   if (m_buffer_fill - end >= PROCESS_INTERVAL_MS * m_sample_rate / 1000) {
     std::vector<float> sentence(audio_for_vad.begin() + start,
                                 audio_for_vad.begin() + end);
-    eventBus->publish<AudioAddedEvent>("audio", sentence);
+    eventBus->publish<AudioAddedEvent>(sentence);
 
     m_buffer_fill = 0;
     m_buffer_pos = 0;

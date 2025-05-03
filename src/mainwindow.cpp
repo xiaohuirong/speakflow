@@ -57,25 +57,31 @@ MainWindow::MainWindow(QWidget *parent, const whisper_params &params)
     // whisper_print_usage(argc, argv, params);
     exit(0);
   }
-  whisperCallback = [this](const string &text) {
-    QMetaObject::invokeMethod(this, [this, text]() {
-      string keyword = "明镜与点点";
-      string message = text;
-      if (message != "" && message.find(keyword) == string::npos) {
-        message += this->params.prompt;
-        ui->queue->enqueueMessage(QString::fromStdString(message));
-        chat->addMessage(message);
-      }
-    });
-  };
+
+  eventBus->subscribe<MessageAddedEvent>(
+      [this](const std::shared_ptr<Event> &event) {
+        auto messageEvent = std::static_pointer_cast<MessageAddedEvent>(event);
+        if (messageEvent->serviceName == "stt") {
+          auto text = messageEvent->message;
+          QMetaObject::invokeMethod(this, [this, text]() {
+            string keyword = "明镜与点点";
+            string message = text;
+            if (message != "" && message.find(keyword) == string::npos) {
+              message += this->params.prompt;
+              ui->queue->enqueueMessage(QString::fromStdString(message));
+              chat->addMessage(message);
+            }
+          });
+        }
+      });
+
   QueueCallback queueCallback(
       [](const vector<size_t> &sizes) { spdlog::info(sizes.size()); });
 
   spdlog::info("mainwindow.h params.language is: {}", params.language);
   set_params();
   stt = make_unique<STT>(this->cparams, this->wparams, params.model,
-                         params.language, this->params.no_context,
-                         whisperCallback, eventBus);
+                         params.language, this->params.no_context, eventBus);
 
   stt->start();
 

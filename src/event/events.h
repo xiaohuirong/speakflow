@@ -1,5 +1,6 @@
 #pragma once
 #include "eventbus.h"
+#include <cstddef>
 #include <string>
 
 // 数据更新事件
@@ -14,20 +15,43 @@ public:
 
 class AudioAddedEvent : public Event {
 public:
-  std::string dataType;
   std::vector<float> audio;
+  AudioAddedEvent(std::vector<float> audio_data)
+      : audio(std::move(audio_data)) {}
+};
 
-  AudioAddedEvent(std::string type, std::vector<float> audio_data)
-      : dataType(std::move(type)), audio(std::move(audio_data)) {}
+class AudioRemovedEvent : public Event {
+public:
+  size_t index;
+  AudioRemovedEvent(size_t i) : index(i) {}
+};
+
+class AudioClearedEvent : public Event {
+public:
+  AudioClearedEvent() = default;
+};
+
+class AudioSentEvent : public Event {
+public:
+  AudioSentEvent() = default;
 };
 
 class MessageAddedEvent : public Event {
 public:
-  std::string dataType;
-  std::vector<float> message;
+  std::string serviceName;
+  std::string message;
 
-  MessageAddedEvent(std::string type, std::vector<float> msg)
-      : dataType(std::move(type)), message(std::move(msg)) {}
+  MessageAddedEvent(std::string name, std::string msg)
+      : serviceName(std::move(name)), message(std::move(msg)) {}
+};
+
+class AutoModeSetEvent : public Event {
+public:
+  std::string serviceName;
+  bool isAutoMode;
+
+  AutoModeSetEvent(std::string name, bool is_auto)
+      : serviceName(std::move(name)), isAutoMode(is_auto) {}
 };
 
 // 错误事件

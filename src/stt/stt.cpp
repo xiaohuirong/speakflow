@@ -12,10 +12,9 @@
 #include <whisper.h>
 
 STT::STT(whisper_context_params &cparams, whisper_full_params &wparams,
-         string path_model, string language, bool no_context, Callback callback,
+         string path_model, string language, bool no_context,
          std::shared_ptr<EventBus> bus)
-    : stopInference(false), whisper_callback(std::move(callback)),
-      cparams(cparams), path_model(std::move(path_model)),
+    : stopInference(false), cparams(cparams), path_model(std::move(path_model)),
       language(std::move(language)), wparams(wparams), no_context(no_context),
       eventBus(std::move(bus)) {
 
@@ -53,10 +52,39 @@ STT::STT(whisper_context_params &cparams, whisper_full_params &wparams,
           eventBus->publish<ServiceStatusEvent>("stt", false);
         }
       });
-}
 
-void STT::setCardWidgetCallbacks(const CardWidgetCallbacks &callbacks) {
-  this->callbacks = callbacks;
+  eventBus->subscribe<AutoModeSetEvent>(
+      [this](const std::shared_ptr<Event> &event) {
+        auto autoModeEvent = std::static_pointer_cast<AutoModeSetEvent>(event);
+        if (autoModeEvent->serviceName == "stt") {
+          if (autoModeEvent->isAutoMode) {
+            setTriggerMethod(TriggerMethod::AUTO_TRIGGER);
+          } else {
+            setTriggerMethod(TriggerMethod::NO_TRIGGER);
+          }
+        }
+      });
+
+  eventBus->subscribe<AudioAddedEvent>(
+      [this](const std::shared_ptr<Event> &event) {
+        auto audioEvent = std::static_pointer_cast<AudioAddedEvent>(event);
+        auto audio = audioEvent->audio;
+        addVoice(audio);
+      });
+
+  eventBus->subscribe<AudioRemovedEvent>(
+      [this](const std::shared_ptr<Event> &event) {
+        auto audioEvent = std::static_pointer_cast<AudioRemovedEvent>(event);
+        removeVoice(audioEvent->index);
+      });
+
+  eventBus->subscribe<AudioClearedEvent>(
+      [this](const std::shared_ptr<Event> &event) { clearVoice(); });
+
+  eventBus->subscribe<AudioSentEvent>(
+      [this](const std::shared_ptr<Event> &event) {
+        setTriggerMethod(TriggerMethod::ONCE_TRIGGER);
+      });
 }
 
 STT::~STT() {
@@ -74,15 +102,6 @@ auto STT::getQueueSizes() const -> vector<size_t> {
     tempQueue.pop();
   }
   return sizes;
-}
-
-auto STT::getOperations() -> STTOperations {
-  return STTOperations{
-      .addVoice = [this](const vector<float> &voice) { this->addVoice(voice); },
-      .removeVoice = [this](size_t index) { return this->removeVoice(index); },
-      .clearVoice = [this]() { this->clearVoice(); },
-      .setTriggerMethod =
-          [this](TriggerMethod method) { this->setTriggerMethod(method); }};
 }
 
 void STT::start() { processThread = thread(&STT::processVoices, this); }
@@ -120,17 +139,15 @@ void STT::processVoices() {
       }
     }
 
-    if (callbacks.onVoiceCleared) {
-      callbacks.onVoiceCleared();
-    }
+    // if (callbacks.onVoiceCleared) {
+    //   callbacks.onVoiceCleared();
+    // }
 
-    if (whisper_callback) {
-      if (!mergedVoice.empty()) {
-        string text = inference(mergedVoice);
-        whisper_callback(text);
-      } else {
-        spdlog::error("{}: {}", __func__, "no voice data after merge");
-      }
+    if (!mergedVoice.empty()) {
+      string text = inference(mergedVoice);
+      eventBus->publish<MessageAddedEvent>("stt", text);
+    } else {
+      spdlog::error("{}: {}", __func__, "no voice data after merge");
     }
   }
 }
@@ -141,9 +158,9 @@ void STT::addVoice(vector<float> voice_data) {
     voiceQueue.push(voice_data);
   }
   cv.notify_one();
-  if (callbacks.onVoiceAdded) {
-    callbacks.onVoiceAdded(std::to_string(voice_data.size()));
-  }
+  // if (callbacks.onVoiceAdded) {
+  //   callbacks.onVoiceAdded(std::to_string(voice_data.size()));
+  // }
 }
 
 void STT::stop() {
@@ -161,9 +178,9 @@ void STT::clearVoice() {
     queue<vector<float>> empty;
     swap(voiceQueue, empty);
   }
-  if (callbacks.onVoiceCleared) {
-    callbacks.onVoiceCleared();
-  }
+  // if (callbacks.onVoiceCleared) {
+  //   callbacks.onVoiceCleared();
+  // }
 }
 
 auto STT::removeVoice(size_t index) -> bool {
@@ -189,9 +206,9 @@ auto STT::removeVoice(size_t index) -> bool {
     }
   }
 
-  if (result && callbacks.onVoiceRemoved) {
-    callbacks.onVoiceRemoved(index);
-  }
+  // if (result && callbacks.onVoiceRemoved) {
+  //   callbacks.onVoiceRemoved(index);
+  // }
   return result;
 }
 

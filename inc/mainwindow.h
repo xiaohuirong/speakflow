@@ -33,7 +33,6 @@ public:
 
 private:
   using ChatCallback = std::function<void(const std::string &, bool)>;
-  using WhisperCallback = std::function<void(const std::string &)>;
   using QueueCallback = std::function<void(const vector<size_t> &)>;
 
   whisper_params params;
@@ -53,7 +52,6 @@ private:
   unique_ptr<MonitorWindow> monitorwindow;
 
   ChatCallback chatCallback;
-  WhisperCallback whisperCallback;
 
   void set_params();
 
