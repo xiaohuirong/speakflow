@@ -19,10 +19,10 @@ public:
   ~Sentense();
 
   auto initialize() -> bool;
-  void start();
-  void stop();
 
 private:
+  void start();
+  void stop();
   void processAudio();
   void checkForSentences();
   [[nodiscard]] auto extractAudioForVAD() const -> vector<float>;

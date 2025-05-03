@@ -17,6 +17,24 @@ Sentense::Sentense(const std::string &model_path, std::shared_ptr<EventBus> bus,
   // 计算环形缓冲区大小
   size_t buffer_size = (m_sample_rate * BUFFER_DURATION_MS) / 1000;
   m_ring_buffer.resize(buffer_size);
+
+  eventBus->subscribe<StartServiceEvent>(
+      [this](const std::shared_ptr<Event> &event) {
+        auto startEvent = std::static_pointer_cast<StartServiceEvent>(event);
+        if (startEvent->serviceName == "sentense") {
+          start();
+          eventBus->publish<ServiceStatusEvent>("sentense", true);
+        }
+      });
+
+  eventBus->subscribe<StopServiceEvent>(
+      [this](const std::shared_ptr<Event> &event) {
+        auto stopEvent = std::static_pointer_cast<StopServiceEvent>(event);
+        if (stopEvent->serviceName == "sentense") {
+          stop();
+          eventBus->publish<ServiceStatusEvent>("sentence", false);
+        }
+      });
 }
 
 Sentense::~Sentense() { stop(); }

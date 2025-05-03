@@ -123,7 +123,7 @@ void MainWindow::set_params() {
 
 MainWindow::~MainWindow() {
   if (is_running) {
-    sentense.stop();
+    eventBus->publish<StopServiceEvent>("sentense");
   }
   stt->stop();
   chat->stop();
@@ -134,11 +134,11 @@ void MainWindow::handleClick() {
     is_running = true;
     ui->clickButton->setText("停止");
     ui->statusbar->showMessage("Whisper实时记录中...");
-    sentense.start();
+    eventBus->publish<StartServiceEvent>("sentense");
   } else {
     is_running = false;
     ui->clickButton->setText("启动");
     ui->statusbar->showMessage("Whisper未启动...");
-    sentense.stop();
+    eventBus->publish<StopServiceEvent>("sentense");
   }
 }

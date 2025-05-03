@@ -30,3 +30,23 @@ public:
   ErrorOccurredEvent(std::string msg, int code)
       : message(std::move(msg)), errorCode(code) {}
 };
+
+class StartServiceEvent : public Event {
+public:
+  std::string serviceName;
+  explicit StartServiceEvent(std::string name) : serviceName(std::move(name)) {}
+};
+
+class StopServiceEvent : public Event {
+public:
+  std::string serviceName;
+  explicit StopServiceEvent(std::string name) : serviceName(std::move(name)) {}
+};
+
+class ServiceStatusEvent : public Event {
+public:
+  std::string serviceName;
+  bool isRunning;
+  ServiceStatusEvent(std::string name, bool running)
+      : serviceName(std::move(name)), isRunning(running) {}
+};

@@ -130,7 +130,7 @@ auto main() -> int {
 
   std::cout << "Starting voice detection. Press Ctrl+C to stop..." << std::endl;
   std::cout << "WAV files will be saved in 'wav/' directory" << std::endl;
-  sen.start();
+  eventBus->publish<StartServiceEvent>("sentense");
 
   // 主循环 - 现在检查g_running标志
   while (g_running) {
@@ -138,7 +138,7 @@ auto main() -> int {
   }
 
   std::cout << "Stopping voice detection..." << std::endl;
-  sen.stop();
+  eventBus->publish<StopServiceEvent>("sentense");
   std::cout << "Program terminated gracefully." << std::endl;
   return 0;
 }
