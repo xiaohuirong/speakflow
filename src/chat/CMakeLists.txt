@@ -1,5 +1,11 @@
 # Find required dependencies
 find_package(liboai QUIET)
+
+if(CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
+  message(STATUS "Building module_a standalone")
+  add_subdirectory(../event event)
+endif()
+
 if(NOT liboai_FOUND)
   message(STATUS "liboai not found, using submodule in dep/liboai")
   add_subdirectory(../../dep/liboai ../../dep/liboai)
@@ -23,4 +29,4 @@ target_include_directories(chat PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}
                                        ${LIBOAI_INCLUDE_DIR})
 
 # Link libraries
-target_link_libraries(chat PUBLIC fmt spdlog ${LIBOAI_LIB})
+target_link_libraries(chat PUBLIC fmt spdlog ${LIBOAI_LIB} event)

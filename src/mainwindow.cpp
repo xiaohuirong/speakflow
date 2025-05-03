@@ -3,7 +3,6 @@
 #include "events.h"
 #include "monitorwindow.h"
 #include "previewpage.h"
-#include "qpushbutton.h"
 #include "ui_mainwindow.h"
 
 #include <QWebChannel>
@@ -25,7 +24,7 @@ MainWindow::MainWindow(QWidget *parent, const whisper_params &params)
   ui->audio_man->setEventBus(eventBus);
 
   monitorwindow = make_unique<MonitorWindow>(this);
-  connect(ui->openmonitor, &QPushButton::clicked, this,
+  connect(ui->monitor, &QAction::triggered, this,
           [this]() { monitorwindow->show(); });
 
   ui->preview->setContextMenuPolicy(Qt::NoContextMenu);
@@ -48,26 +47,6 @@ MainWindow::MainWindow(QWidget *parent, const whisper_params &params)
     exit(0);
   }
 
-  eventBus->subscribe<MessageAddedEvent>(
-      [this](const std::shared_ptr<Event> &event) {
-        auto messageEvent = std::static_pointer_cast<MessageAddedEvent>(event);
-        if (messageEvent->serviceName == "stt") {
-          auto text = messageEvent->message;
-          QMetaObject::invokeMethod(this, [this, text]() {
-            string keyword = "明镜与点点";
-            string message = text;
-            if (message != "" && message.find(keyword) == string::npos) {
-              message += this->params.prompt;
-              ui->queue->enqueueMessage(QString::fromStdString(message));
-              chat->addMessage(message);
-            }
-          });
-        }
-      });
-
-  QueueCallback queueCallback(
-      [](const vector<size_t> &sizes) { spdlog::info(sizes.size()); });
-
   spdlog::info("mainwindow.h params.language is: {}", params.language);
   set_params();
   stt = make_unique<STT>(this->cparams, this->wparams, params.model,
@@ -75,22 +54,26 @@ MainWindow::MainWindow(QWidget *parent, const whisper_params &params)
 
   eventBus->publish<StartServiceEvent>("stt");
 
-  chatCallback = [this](const string &message, bool is_response) {
-    QMetaObject::invokeMethod(this, [this, message, is_response]() {
-      m_content.appendText(QString::fromStdString(message));
-      ui->preview->page()->runJavaScript(
-          "window.scrollTo(0, document.body.scrollHeight);");
-      if (!is_response) {
-        ui->queue->dequeueMessage();
-      }
-    });
-  };
-  chat = make_unique<Chat>(this->params.url, this->params.token,
-                           this->params.llm, this->params.timeout,
-                           this->params.system, chatCallback);
-  chat->start();
+  eventBus->subscribe<MessageAddedEvent>(
+      [this](const std::shared_ptr<Event> &event) {
+        auto messageEvent = std::static_pointer_cast<MessageAddedEvent>(event);
+        if (messageEvent->serviceName == "chat") {
+          auto text = messageEvent->message;
+          QMetaObject::invokeMethod(this, [this, text]() {
+            m_content.appendText(QString::fromStdString(text));
+            ui->preview->page()->runJavaScript(
+                "window.scrollTo(0, document.body.scrollHeight);");
+          });
+        }
+      });
+
+  chat =
+      make_unique<Chat>(this->params.url, this->params.token, this->params.llm,
+                        this->params.timeout, this->params.system, eventBus);
+
+  eventBus->publish<StartServiceEvent>("chat");
   if (params.init_prompt != "") {
-    chat->addMessage(params.init_prompt);
+    eventBus->publish<MessageAddedEvent>("stt", params.init_prompt);
   }
 }
 
@@ -122,17 +105,5 @@ MainWindow::~MainWindow() {
     eventBus->publish<StopServiceEvent>("sentense");
   }
   eventBus->publish<StopServiceEvent>("stt");
-  chat->stop();
-}
-
-void MainWindow::handleClick() {
-  if (!is_running) {
-    is_running = true;
-    ui->statusbar->showMessage("Whisper实时记录中...");
-    eventBus->publish<StartServiceEvent>("sentense");
-  } else {
-    is_running = false;
-    ui->statusbar->showMessage("Whisper未启动...");
-    eventBus->publish<StopServiceEvent>("sentense");
-  }
+  eventBus->publish<StopServiceEvent>("chat");
 }

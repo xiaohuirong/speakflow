@@ -1,4 +1,5 @@
 #include "chat.h"
+#include "events.h"
 #include "liboai.h"
 #include <print>
 #include <spdlog/spdlog.h>
@@ -6,9 +7,9 @@
 #include <utility>
 
 Chat::Chat(string url, string key, string model, int32_t timeout, string system,
-           Callback callback)
+           std::shared_ptr<EventBus> bus)
     : stopChat(false), key(key), model(std::move(model)), url(url),
-      timeout(timeout), system(system), whisper_callback(std::move(callback)) {
+      timeout(timeout), system(system), eventBus(std::move(bus)) {
 
   oai = new OpenAI(url);
 
@@ -23,6 +24,36 @@ Chat::Chat(string url, string key, string model, int32_t timeout, string system,
       spdlog::error("set system data failed");
     }
   }
+
+  eventBus->subscribe<StartServiceEvent>(
+      [this](const std::shared_ptr<Event> &event) {
+        auto startEvent = std::static_pointer_cast<StartServiceEvent>(event);
+        if (startEvent->serviceName == "chat") {
+          start();
+          eventBus->publish<ServiceStatusEvent>("chat", true);
+        }
+      });
+
+  eventBus->subscribe<StopServiceEvent>(
+      [this](const std::shared_ptr<Event> &event) {
+        auto stopEvent = std::static_pointer_cast<StopServiceEvent>(event);
+        if (stopEvent->serviceName == "chat") {
+          stop();
+          eventBus->publish<ServiceStatusEvent>("chat", false);
+        }
+      });
+
+  eventBus->subscribe<MessageAddedEvent>(
+      [this](const std::shared_ptr<Event> &event) {
+        auto messageEvent = std::static_pointer_cast<MessageAddedEvent>(event);
+        if (messageEvent->serviceName == "stt") {
+          string keyword = "明镜与点点";
+          if (messageEvent->message != "" &&
+              messageEvent->message.find(keyword) == string::npos) {
+            addMessage(messageEvent->message);
+          }
+        }
+      });
 }
 
 void Chat::start() { chatThread = thread(&Chat::processMessages, this); }
@@ -67,14 +98,14 @@ void Chat::processMessages() {
     spdlog::info("Processing message: {0}", message.text);
     message_count += 1;
 
-    whisper_callback(format("## USER {} \n", message_count) + message.text,
-                     false);
+    eventBus->publish<MessageAddedEvent>(
+        "chat", format("## USER {} \n", message_count) + message.text);
 
-    if (whisper_callback) {
-      string response = wait_response(message.text);
-      // callback
-      whisper_callback(format("## AI {} \n", message_count) + response, true);
-    }
+    string response = wait_response(message.text);
+    // callback
+
+    eventBus->publish<MessageAddedEvent>(
+        "chat", format("## AI {} \n", message_count) + response);
   }
 }
 

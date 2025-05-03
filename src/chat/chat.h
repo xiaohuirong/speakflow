@@ -2,8 +2,8 @@
 
 #include "liboai.h"
 
+#include "eventbus.h"
 #include <condition_variable>
-#include <functional>
 #include <mutex>
 #include <queue>
 #include <string>
@@ -14,24 +14,23 @@ using namespace std;
 
 class Chat {
 public:
-  using Callback = function<void(const string &, bool)>;
-
   struct Message {
     string text;
   };
 
   Chat(string url, string key, string model, int32_t timeout, string system,
-       Callback callback);
+       std::shared_ptr<EventBus> bus);
+
+private:
+  void addMessage(const string &messageText);
 
   void start();
   void stop();
-  void addMessage(const string &messageText);
 
-private:
   void processMessages();
   auto wait_response(const string input) -> string;
 
-  Callback whisper_callback;
+  std::shared_ptr<EventBus> eventBus;
 
   queue<Message> messageQueue; // Message queue
   mutex queueMutex;            // Mutex to protect the message queue

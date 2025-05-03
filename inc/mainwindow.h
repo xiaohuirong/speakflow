@@ -34,9 +34,6 @@ public:
   ~MainWindow() override;
 
 private:
-  using ChatCallback = std::function<void(const std::string &, bool)>;
-  using QueueCallback = std::function<void(const vector<size_t> &)>;
-
   whisper_params params;
   whisper_full_params wparams;
   whisper_context_params cparams;
@@ -55,11 +52,6 @@ private:
 
   unique_ptr<CardMan> audio_Man;
 
-  ChatCallback chatCallback;
-
   void set_params();
-
-private slots:
-  void handleClick();
 };
 #endif // MAINWINDOW_H

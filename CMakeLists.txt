@@ -19,7 +19,7 @@ find_package(spdlog REQUIRED)
 file(GLOB SOURCES src/*.cpp res/*.qrc)
 set(UI_FILES ui/mainwindow.ui ui/monitorwindow.ui)
 set(MOC_HEADERS inc/mainwindow.h inc/document.h inc/previewpage.h
-                inc/messagequeue.h inc/monitorwindow.h)
+                inc/monitorwindow.h)
 
 qt6_wrap_ui(UI_HEADERS ${UI_FILES})
 set(CMAKE_AUTORCC ON)
