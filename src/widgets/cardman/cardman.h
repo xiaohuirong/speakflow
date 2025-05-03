@@ -8,6 +8,7 @@
 #include <QPushButton>
 #include <QScrollArea>
 #include <QWidget>
+#include <qpushbutton.h>
 
 class CardMan : public QWidget {
   Q_OBJECT
@@ -15,7 +16,7 @@ public:
   explicit CardMan(std::shared_ptr<EventBus> bus, QWidget *parent = nullptr);
   ~CardMan() override;
 
-public slots:
+private slots:
   void addCard(const QString &text);
   void removeCard(int index);
   void clearCards();
@@ -25,8 +26,9 @@ private:
 
   QScrollArea *scrollArea;
   QWidget *cardsContainer;
-  QPushButton *recordButton; // Changed from triggerButton to recordButton
-  QPushButton *sendButton;
+  QPushButton recordButton; // Changed from triggerButton to recordButton
+  QPushButton sendButton;
+  QPushButton clearButton;
   QCheckBox *autoTriggerCheckBox;
   std::vector<QFrame *> cardFrames;
 

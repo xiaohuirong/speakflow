@@ -6,9 +6,9 @@
 #include <QPushButton>
 #include <QSpacerItem>
 #include <algorithm>
-#include <iostream>
 #include <memory>
 #include <qpushbutton.h>
+#include <spdlog/spdlog.h>
 
 CardMan::CardMan(std::shared_ptr<EventBus> bus, QWidget *parent)
     : QWidget(parent), eventBus(std::move(bus)) {
@@ -47,20 +47,22 @@ CardMan::CardMan(std::shared_ptr<EventBus> bus, QWidget *parent)
       [this](const std::shared_ptr<Event> &event) {
         auto serviceEvent = std::static_pointer_cast<ServiceStatusEvent>(event);
 
-        std::cout << "receive service status event "
-                  << serviceEvent->serviceName << std::endl;
+        spdlog::info("receive service status event {}",
+                     serviceEvent->serviceName);
         if (serviceEvent->serviceName == "sentense") {
           if (serviceEvent->isRunning) {
             isRecording = true;
-            recordButton->setChecked(true);
-            std::cout << "set to true" << std::endl;
+            recordButton.setChecked(true);
+            spdlog::info("set to true.");
           } else {
             isRecording = false;
-            recordButton->setChecked(false);
-            std::cout << "set to false" << std::endl;
+            recordButton.setChecked(false);
+            spdlog::info("set to false.");
           }
         }
       });
+
+  eventBus->publish<AutoModeSetEvent>("stt", false);
 }
 
 void CardMan::setupControlButtons() {
@@ -70,30 +72,35 @@ void CardMan::setupControlButtons() {
   controlLayout->setContentsMargins(10, 10, 10, 10);
 
   // Add record button with microphone icon
-  recordButton = new QPushButton(controlPanel);
-  recordButton->setIcon(QIcon::fromTheme("microphone-sensitivity-high"));
-  // recordButton->setIconSize(QSize(24, 24));
+  recordButton.setIcon(QIcon::fromTheme("microphone-sensitivity-high"));
+  recordButton.setIconSize(QSize(24, 24));
   // recordButton->setFixedSize(50, 50);
-  recordButton->setCheckable(true);
-  recordButton->setChecked(false);
+  recordButton.setCheckable(true);
+  recordButton.setChecked(false);
+  recordButton.setFocusPolicy(Qt::NoFocus);
 
   // Add auto trigger checkbox with better styling
-  autoTriggerCheckBox = new QCheckBox("Auto Mode", controlPanel);
+  autoTriggerCheckBox = new QCheckBox("Auto Mode");
+  autoTriggerCheckBox->setFocusPolicy(Qt::NoFocus);
 
-  sendButton = new QPushButton(controlPanel);
-  sendButton->setText("发送");
-  sendButton->setCheckable(false);
+  sendButton.setText("发送");
+  sendButton.setCheckable(false);
+  sendButton.setFocusPolicy(Qt::NoFocus);
+
+  clearButton.setText("清除");
 
   // Add spacer to push items to the left
-  controlLayout->addWidget(recordButton);
+  controlLayout->addWidget(&recordButton);
   controlLayout->addSpacing(15);
-  controlLayout->addWidget(sendButton);
+  controlLayout->addWidget(&sendButton);
+  controlLayout->addSpacing(15);
+  controlLayout->addWidget(&clearButton);
   controlLayout->addSpacing(15);
   controlLayout->addWidget(autoTriggerCheckBox);
   controlLayout->addStretch();
 
   // 修改信号连接，改为点击切换状态
-  connect(recordButton, &QPushButton::clicked, [this]() {
+  connect(&recordButton, &QPushButton::clicked, [this]() {
     if (isRecording) {
       eventBus->publish<StopServiceEvent>("sentense");
     } else {
@@ -101,16 +108,16 @@ void CardMan::setupControlButtons() {
     }
   });
 
-  connect(sendButton, &QPushButton::clicked,
+  connect(&sendButton, &QPushButton::clicked,
           [this]() { eventBus->publish<AudioSentEvent>(); });
 
   connect(autoTriggerCheckBox, &QCheckBox::checkStateChanged,
           [this](Qt::CheckState state) {
             if (state == Qt::Checked) {
-              sendButton->setEnabled(false);
+              sendButton.setEnabled(false);
               eventBus->publish<AutoModeSetEvent>("stt", true);
             } else {
-              sendButton->setEnabled(true);
+              sendButton.setEnabled(true);
               eventBus->publish<AutoModeSetEvent>("stt", false);
             }
           });
