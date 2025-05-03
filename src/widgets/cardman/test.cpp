@@ -1,12 +1,11 @@
 #include "cardman.h"
-#include "common_stt.h"
+#include "events.h"
 #include <QApplication>
 #include <QHBoxLayout>
 #include <QLineEdit>
 #include <QPushButton>
 #include <QVBoxLayout>
 #include <QWidget>
-#include <csignal>
 
 auto main(int argc, char *argv[]) -> int {
   QApplication app(argc, argv);
@@ -16,8 +15,10 @@ auto main(int argc, char *argv[]) -> int {
   mainWindow.setWindowTitle("Card Manager");
   auto *mainLayout = new QVBoxLayout(&mainWindow);
 
+  auto eventBus = std::make_shared<EventBus>();
+
   // 创建卡片管理部件
-  auto *cardMan = new CardMan();
+  auto *cardMan = new CardMan(eventBus);
   mainLayout->addWidget(cardMan, 1);
 
   // 创建控制面板
@@ -35,50 +36,20 @@ auto main(int argc, char *argv[]) -> int {
   controlLayout->addWidget(clearButton);
   mainLayout->addWidget(controlPanel);
 
-  // 设置前后端通信
-  const CardWidgetCallbacks frontend_callbacks = cardMan->getCallbacks();
-
-  const STTOperations backend_operations = {
-      .addVoice =
-          [frontend_callbacks](const std::vector<float> &audio) {
-            frontend_callbacks.onVoiceAdded(
-                std::to_string(static_cast<int>(audio[0])));
-          },
-      .removeVoice =
-          [frontend_callbacks](size_t index) {
-            frontend_callbacks.onVoiceRemoved(index);
-            return true;
-          },
-      .clearVoice =
-          [frontend_callbacks]() { frontend_callbacks.onVoiceCleared(); },
-      .setTriggerMethod =
-          [frontend_callbacks](TriggerMethod method) {
-            if (method == TriggerMethod::ONCE_TRIGGER)
-              frontend_callbacks.onVoiceCleared();
-          }};
-
-  cardMan->setBackendOperations(backend_operations);
-
   // 连接按钮信号
   QObject::connect(addButton, &QPushButton::clicked, [&]() {
     QString text = inputLine->text().trimmed();
-    if (!text.isEmpty() && backend_operations.addVoice) {
-      backend_operations.addVoice(std::vector<float>{text.toFloat()});
+    if (!text.isEmpty()) {
+      eventBus->publish<AudioAddedEvent>(std::vector<float>{text.toFloat()});
       inputLine->clear();
     }
   });
 
-  QObject::connect(removeButton, &QPushButton::clicked, [&]() {
-    if (backend_operations.removeVoice) {
-      backend_operations.removeVoice(0);
-    }
-  });
+  QObject::connect(removeButton, &QPushButton::clicked,
+                   [&]() { eventBus->publish<AudioRemovedEvent>(0); });
 
-  QObject::connect(clearButton, &QPushButton::clicked, [&]() {
-    if (backend_operations.clearVoice) {
-      backend_operations.clearVoice();
-    }
-  });
+  QObject::connect(clearButton, &QPushButton::clicked,
+                   [&]() { eventBus->publish<AudioClearedEvent>(); });
 
   mainWindow.show();
   return app.exec();

@@ -1,7 +1,7 @@
 #ifndef CARDMAN_H
 #define CARDMAN_H
 
-#include "common_stt.h"
+#include "events.h"
 #include "flowlayout.h"
 #include <QCheckBox>
 #include <QFrame>
@@ -12,14 +12,8 @@
 class CardMan : public QWidget {
   Q_OBJECT
 public:
-  explicit CardMan(QWidget *parent = nullptr);
+  explicit CardMan(std::shared_ptr<EventBus> bus, QWidget *parent = nullptr);
   ~CardMan() override;
-
-  // 获取前端回调接口
-  auto getCallbacks() -> CardWidgetCallbacks;
-
-  // 设置后端操作接口
-  void setBackendOperations(const STTOperations &ops);
 
 public slots:
   void addCard(const QString &text);
@@ -27,11 +21,13 @@ public slots:
   void clearCards();
 
 private:
+  std::shared_ptr<EventBus> eventBus;
+
   QScrollArea *scrollArea;
   QWidget *cardsContainer;
   QPushButton *recordButton; // Changed from triggerButton to recordButton
+  QPushButton *sendButton;
   QCheckBox *autoTriggerCheckBox;
-  STTOperations backendOps;
   std::vector<QFrame *> cardFrames;
 
   void createCard(const QString &text);

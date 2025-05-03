@@ -6,7 +6,7 @@ add_subdirectory(audio)
 add_subdirectory(vad)
 if(CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
   message(STATUS "Building module_a standalone")
-  add_subdirectory(../event ../event)
+  add_subdirectory(../event event)
 endif()
 
 # Add source files
