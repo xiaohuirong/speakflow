@@ -1,12 +1,8 @@
-#pragma once
-#include "audio.h"
-#include <atomic>
+#include "audio.h" // Assuming this is the base class header
 #include <condition_variable>
-#include <deque>
-#include <memory>
 #include <mutex>
 #include <pipewire/pipewire.h>
-#include <string>
+#include <spa/param/audio/format-utils.h>
 #include <thread>
 #include <vector>
 
@@ -22,37 +18,19 @@ public:
   void get(int ms, std::vector<float> &audio) override;
 
 private:
-  struct PipeWireDeleter {
-    void operator()(pw_thread_loop *loop) const;
-    void operator()(pw_context *ctx) const;
-    void operator()(pw_core *core) const;
-    void operator()(pw_stream *stream) const;
-  };
-
-  using UniquePwThreadLoop = std::unique_ptr<pw_thread_loop, PipeWireDeleter>;
-  using UniquePwContext = std::unique_ptr<pw_context, PipeWireDeleter>;
-  using UniquePwCore = std::unique_ptr<pw_core, PipeWireDeleter>;
-  using UniquePwStream = std::unique_ptr<pw_stream, PipeWireDeleter>;
-
-  void stop();
   void cleanup();
-  void setupPipeWire();
-  void setupStream();
-  void startCaptureThread();
-  static void onProcess(void *userdata);
 
-  UniquePwThreadLoop mainloop_;
-  UniquePwContext context_;
-  UniquePwCore core_;
-  UniquePwStream stream_;
-  struct pw_stream_events stream_events_ = {};
-  struct spa_hook stream_listener_ = {};
+  static void on_process(void *userdata);
+  static void on_stream_param_changed(void *userdata, uint32_t id,
+                                      const struct spa_pod *param);
 
-  std::deque<float> buffer_;
+  struct pw_main_loop *loop_ = nullptr;
+  struct pw_stream *stream_ = nullptr;
+  std::thread thread_;
+  std::vector<float> buffer_;
   std::mutex buffer_mutex_;
   std::condition_variable buffer_cv_;
-  std::thread capture_thread_;
-  std::atomic<bool> quit_{false};
-  std::string input_;
-  const spa_pod *params_[1];
+  std::string target_;
+
+  static const struct pw_stream_events stream_events_;
 };
