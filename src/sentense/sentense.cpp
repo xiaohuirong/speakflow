@@ -7,12 +7,18 @@
 #include <thread>
 
 Sentense::Sentense(const std::string &model_path, std::shared_ptr<EventBus> bus,
-                   int sample_rate, int capture_id, bool is_microphone)
+                   int sample_rate)
     : m_model_path(model_path), eventBus(std::move(bus)),
-      m_sample_rate(sample_rate), m_capture_id(capture_id),
-      m_is_microphone(is_microphone ? SDL_TRUE : SDL_FALSE),
-      m_audio_capture(BUFFER_DURATION_MS),
+      m_sample_rate(sample_rate),
       m_vad(model_path, sample_rate, 32, 0.5, MIN_SENTENCE_GAP_MS, 30, 250) {
+
+#ifdef USE_SDL_AUDIO
+  m_audio_capture = Audio::create("sdl", BUFFER_DURATION_MS);
+#elif defined(USE_QT_AUDIO)
+  m_audio_capture = Audio::create("qt", BUFFER_DURATION_MS);
+#elif defined(USE_PIPEWIRE_AUDIO)
+  m_audio_capture = Audio::create("pipewire", BUFFER_DURATION_MS);
+#endif
 
   // 计算环形缓冲区大小
   size_t buffer_size = (m_sample_rate * BUFFER_DURATION_MS) / 1000;
@@ -42,7 +48,7 @@ Sentense::~Sentense() { stop(); }
 auto Sentense::initialize() -> bool {
 
 #ifdef USE_SDL_AUDIO
-  if (!m_audio_capture.init(m_capture_id, m_sample_rate, m_is_microphone)) {
+  if (!m_audio_capture->init(m_sample_rate)) {
     std::cerr << "Failed to initialize audio capture" << std::endl;
     return false;
   }
@@ -61,7 +67,7 @@ void Sentense::start() {
     return;
 
   m_running = true;
-  m_audio_capture.resume();
+  m_audio_capture->resume();
 
   // 启动处理线程
   std::thread([this]() {
@@ -88,7 +94,7 @@ void Sentense::start() {
 
 void Sentense::stop() {
   m_running = false;
-  m_audio_capture.pause();
+  m_audio_capture->pause();
 
   // 处理残留音频
   std::lock_guard<std::mutex> lock(m_buffer_mutex);
@@ -119,7 +125,7 @@ void Sentense::stop() {
 void Sentense::processAudio() {
   // 从音频捕获获取最新数据
   std::vector<float> new_audio;
-  m_audio_capture.get(PROCESS_INTERVAL_MS, new_audio);
+  m_audio_capture->get(PROCESS_INTERVAL_MS, new_audio);
 
   if (new_audio.empty())
     return;

@@ -3,6 +3,7 @@
 #include <SDL.h>
 #include <SDL_audio.h>
 
+#include "audio.h"
 #include <atomic>
 #include <cstdint>
 #include <mutex>
@@ -14,26 +15,26 @@ using namespace std;
 // SDL Audio capture
 //
 
-class audio_async {
+class SDLAudio : public Audio {
 public:
-  audio_async(int len_ms);
-  ~audio_async();
+  explicit SDLAudio(int len_ms = 2000);
+  ~SDLAudio() override;
 
-  auto init(int capture_id, int sample_rate, SDL_bool is_microphone) -> bool;
+  auto init(int sample_rate, const std::string &input = "") -> bool override;
 
   // start capturing audio via the provided SDL callback
   // keep last len_ms seconds of audio in a circular buffer
-  auto resume() -> bool;
-  auto pause() -> bool;
-  auto clear() -> bool;
+  auto resume() -> bool override;
+  auto pause() -> bool override;
+  auto clear() -> bool override;
 
+  // get audio data from the circular buffer
+  void get(int ms, vector<float> &audio) override;
+
+private:
   // callback to be called by SDL
   void callback(uint8_t *stream, int len);
 
-  // get audio data from the circular buffer
-  void get(int ms, vector<float> &audio);
-
-private:
   SDL_AudioDeviceID m_dev_id_in = 0;
 
   int m_len_ms = 0;

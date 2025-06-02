@@ -3,20 +3,21 @@
 #include <cstdio>
 #include <print>
 
-audio_async::audio_async(int len_ms) {
+SDLAudio::SDLAudio(int len_ms) {
   m_len_ms = len_ms;
 
   m_running = false;
 }
 
-audio_async::~audio_async() {
+SDLAudio::~SDLAudio() {
   if (m_dev_id_in) {
     SDL_CloseAudioDevice(m_dev_id_in);
   }
 }
 
-auto audio_async::init(int capture_id, int sample_rate, SDL_bool is_microphone)
-    -> bool {
+auto SDLAudio::init(int sample_rate, const string &input) -> bool {
+  int capture_id = -1;
+  SDL_bool is_microphone = SDL_TRUE;
   SDL_LogSetPriority(SDL_LOG_CATEGORY_APPLICATION, SDL_LOG_PRIORITY_INFO);
 
   if (SDL_Init(SDL_INIT_AUDIO) < 0) {
@@ -49,7 +50,7 @@ auto audio_async::init(int capture_id, int sample_rate, SDL_bool is_microphone)
   capture_spec_requested.samples = 1024;
   capture_spec_requested.callback = [](void *userdata, uint8_t *stream,
                                        int len) {
-    auto *audio = (audio_async *)userdata;
+    auto *audio = (SDLAudio *)userdata;
     audio->callback(stream, len);
   };
   capture_spec_requested.userdata = this;
@@ -95,7 +96,7 @@ auto audio_async::init(int capture_id, int sample_rate, SDL_bool is_microphone)
   return true;
 }
 
-auto audio_async::resume() -> bool {
+auto SDLAudio::resume() -> bool {
   if (!m_dev_id_in) {
     println(stderr, "{}: no audio device to resume!", __func__);
     return false;
@@ -113,7 +114,7 @@ auto audio_async::resume() -> bool {
   return true;
 }
 
-auto audio_async::pause() -> bool {
+auto SDLAudio::pause() -> bool {
   if (!m_dev_id_in) {
     println(stderr, "{}: no audio device to pause!", __func__);
     return false;
@@ -131,7 +132,7 @@ auto audio_async::pause() -> bool {
   return true;
 }
 
-auto audio_async::clear() -> bool {
+auto SDLAudio::clear() -> bool {
   if (!m_dev_id_in) {
     println(stderr, "{}: no audio device to clear!", __func__);
     return false;
@@ -153,7 +154,7 @@ auto audio_async::clear() -> bool {
 }
 
 // callback to be called by SDL
-void audio_async::callback(uint8_t *stream, int len) {
+void SDLAudio::callback(uint8_t *stream, int len) {
   if (!m_running) {
     return;
   }
@@ -186,7 +187,7 @@ void audio_async::callback(uint8_t *stream, int len) {
   }
 }
 
-void audio_async::get(int ms, vector<float> &result) {
+void SDLAudio::get(int ms, vector<float> &result) {
   if (!m_dev_id_in) {
     println(stderr, "{}: no audio device to get audio from!", __func__);
     return;
@@ -242,4 +243,12 @@ auto sdl_poll_events() -> bool {
   }
 
   return true;
+}
+
+auto Audio::create(const std::string &type, int len_ms)
+    -> std::unique_ptr<Audio> {
+  if (type == "sdl") {
+    return std::make_unique<SDLAudio>(len_ms);
+  }
+  return nullptr;
 }

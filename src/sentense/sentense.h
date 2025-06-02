@@ -1,11 +1,7 @@
 // vad_processor.h
 #pragma once
 
-#ifdef USE_SDL_AUDIO
-#include "sdlaudio.h"
-#elif defined(USE_QT_AUDIO)
-#include "qtaudio.h"
-#endif
+#include "audio.h"
 #include "eventbus.h"
 #include "silero-vad-onnx.h"
 #include <string>
@@ -14,8 +10,7 @@
 class Sentense {
 public:
   Sentense(const std::string &model_path, std::shared_ptr<EventBus> bus,
-           int sample_rate = 16000, int capture_id = -1,
-           bool is_microphone = SDL_TRUE);
+           int sample_rate = 16000);
   ~Sentense();
 
   auto initialize() -> bool;
@@ -30,15 +25,9 @@ private:
   // Configuration
   const std::string m_model_path;
   const int m_sample_rate;
-  const int m_capture_id;
-  const SDL_bool m_is_microphone;
 
-// Components
-#ifdef USE_SDL_AUDIO
-  audio_async m_audio_capture;
-#elif defined(USE_QT_AUDIO)
-  AudioAsync m_audio_capture;
-#endif
+  // Components
+  std::unique_ptr<Audio> m_audio_capture;
   VadIterator m_vad;
   std::shared_ptr<EventBus> eventBus;
 
