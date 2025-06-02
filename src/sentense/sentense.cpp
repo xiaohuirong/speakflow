@@ -47,17 +47,10 @@ Sentense::~Sentense() { stop(); }
 
 auto Sentense::initialize() -> bool {
 
-#ifdef USE_SDL_AUDIO
   if (!m_audio_capture->init(m_sample_rate)) {
     std::cerr << "Failed to initialize audio capture" << std::endl;
     return false;
   }
-#elif defined(USE_QT_AUDIO)
-  if (!m_audio_capture.init(-1, WHISPER_SAMPLE_RATE, true)) {
-    std::cerr << "Failed to initialize audio capture" << std::endl;
-    return false;
-  }
-#endif
 
   return true;
 }

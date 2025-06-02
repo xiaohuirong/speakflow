@@ -1,10 +1,10 @@
 #include "qtaudio.h"
 
 // Implementation
-AudioAsync::AudioAsync(int len_ms, QObject *parent)
+QTAudio::QTAudio(int len_ms, QObject *parent)
     : QObject(parent), m_len_ms(len_ms) {}
 
-AudioAsync::~AudioAsync() {
+QTAudio::~QTAudio() {
   if (m_audioSource) {
     m_audioSource->stop();
     delete m_audioSource;
@@ -14,7 +14,8 @@ AudioAsync::~AudioAsync() {
   }
 }
 
-bool AudioAsync::init(int capture_id, int sample_rate, bool is_microphone) {
+auto QTAudio::init(int sample_rate, const std::string &input) -> bool {
+  int capture_id = -1;
   auto audioInputs = QMediaDevices::audioInputs();
   qDebug() << "Found" << audioInputs.size() << "capture devices:";
   for (int i = 0; i < audioInputs.size(); ++i) {
@@ -53,12 +54,12 @@ bool AudioAsync::init(int capture_id, int sample_rate, bool is_microphone) {
 
   m_audioSource = new QAudioSource(m_device, format, this);
   connect(m_audioSource, &QAudioSource::stateChanged, this,
-          &AudioAsync::handleStateChanged);
+          &QTAudio::handleStateChanged);
 
   return true;
 }
 
-bool AudioAsync::resume() {
+auto QTAudio::resume() -> bool {
   if (!m_audioSource) {
     qDebug() << "No audio device to resume!";
     return false;
@@ -70,14 +71,14 @@ bool AudioAsync::resume() {
   }
 
   m_audioIO = m_audioSource->start();
-  connect(m_audioIO, &QIODevice::readyRead, this, &AudioAsync::readAudioData,
+  connect(m_audioIO, &QIODevice::readyRead, this, &QTAudio::readAudioData,
           Qt::DirectConnection);
 
   m_running = true;
   return true;
 }
 
-bool AudioAsync::pause() {
+auto QTAudio::pause() -> bool {
   if (!m_audioSource) {
     qDebug() << "No audio device to pause!";
     return false;
@@ -93,7 +94,7 @@ bool AudioAsync::pause() {
   return true;
 }
 
-bool AudioAsync::clear() {
+auto QTAudio::clear() -> bool {
   if (!m_audioSource) {
     qDebug() << "No audio device to clear!";
     return false;
@@ -110,7 +111,7 @@ bool AudioAsync::clear() {
   return true;
 }
 
-void AudioAsync::handleStateChanged(QAudio::State newState) {
+void QTAudio::handleStateChanged(QAudio::State newState) {
   switch (newState) {
   case QAudio::StoppedState:
     if (m_audioSource->error() != QAudio::NoError) {
@@ -129,7 +130,7 @@ void AudioAsync::handleStateChanged(QAudio::State newState) {
   }
 }
 
-void AudioAsync::readAudioData() {
+void QTAudio::readAudioData() {
   if (!m_running)
     return;
 
@@ -159,7 +160,7 @@ void AudioAsync::readAudioData() {
   m_audio_len = std::min(m_audio_len + n_samples, m_audio.size());
 }
 
-void AudioAsync::get(int ms, std::vector<float> &result) {
+void QTAudio::get(int ms, std::vector<float> &result) {
   if (!m_audioSource) {
     qDebug() << "No audio device to get audio from!";
     return;
@@ -199,4 +200,12 @@ void AudioAsync::get(int ms, std::vector<float> &result) {
     std::copy(m_audio.begin() + s0, m_audio.begin() + s0 + n_samples,
               result.begin());
   }
+}
+
+auto Audio::create(const std::string &type, int len_ms)
+    -> std::unique_ptr<Audio> {
+  if (type == "qt") {
+    return std::make_unique<QTAudio>(len_ms);
+  }
+  return nullptr;
 }

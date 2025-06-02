@@ -1,3 +1,4 @@
+#include "audio.h"
 #include <QAudioDevice>
 #include <QAudioSource>
 #include <QDebug>
@@ -6,17 +7,17 @@
 #include <QThread>
 #include <vector>
 
-class AudioAsync : public QObject {
+class QTAudio : public QObject, public Audio {
   Q_OBJECT
 public:
-  explicit AudioAsync(int len_ms, QObject *parent = nullptr);
-  ~AudioAsync();
+  explicit QTAudio(int len_ms, QObject *parent = nullptr);
+  ~QTAudio() override;
 
-  bool init(int capture_id, int sample_rate, bool is_microphone);
-  bool resume();
-  bool pause();
-  bool clear();
-  void get(int ms, std::vector<float> &result);
+  auto init(int sample_rate, const std::string &input) -> bool override;
+  auto resume() -> bool override;
+  auto pause() -> bool override;
+  auto clear() -> bool override;
+  void get(int ms, std::vector<float> &result) override;
 
 private slots:
   void handleStateChanged(QAudio::State newState);
