@@ -2,7 +2,7 @@
 
 # 定义音频后端选项
 set(USE_AUDIO
-    "SDL"
+    "PIPEWIRE"
     CACHE STRING "Audio backend to use (SDL or QT or PIPEWIRE)")
 
 # 设置有效的选项值
@@ -18,10 +18,10 @@ if(USE_AUDIO STREQUAL "SDL")
   find_package(SDL2 REQUIRED)
   add_library(audio_backend STATIC sdlaudio.cpp)
   # PUBLIC let another file can use this *.h
-  target_include_directories(audio_backend PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}
-                                                  ${SDL2_INCLUDE_DIRS})
-  target_link_libraries(audio_backend PUBLIC SDL2)
-  target_compile_definitions(audio_backend PUBLIC USE_SDL_AUDIO=1)
+  target_include_directories(audio_backend PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
+  target_include_directories(audio_backend PRIVATE ${SDL2_INCLUDE_DIRS})
+  target_link_libraries(audio_backend PRIVATE SDL2)
+  target_compile_definitions(audio_backend PRIVATE USE_SDL_AUDIO=1)
   message(STATUS "Using SDL audio backend")
 
 elseif(USE_AUDIO STREQUAL "QT")
@@ -29,8 +29,8 @@ elseif(USE_AUDIO STREQUAL "QT")
   set(CMAKE_AUTOMOC ON)
   add_library(audio_backend STATIC qtaudio.cpp)
   target_include_directories(audio_backend PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
-  target_link_libraries(audio_backend PUBLIC Qt6::Multimedia)
-  target_compile_definitions(audio_backend PUBLIC USE_QT_AUDIO=1)
+  target_link_libraries(audio_backend PRIVATE Qt6::Multimedia)
+  target_compile_definitions(audio_backend PRIVATE USE_QT_AUDIO=1)
   message(STATUS "Using Qt audio backend")
 
 elseif(USE_AUDIO STREQUAL "PIPEWIRE")
@@ -41,18 +41,18 @@ elseif(USE_AUDIO STREQUAL "PIPEWIRE")
   pkg_check_modules(SPA REQUIRED libspa-0.2)
   add_library(audio_backend STATIC pipeaudio.cpp)
 
+  target_include_directories(audio_backend PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
   target_include_directories(audio_backend 
-      PUBLIC 
-          ${CMAKE_CURRENT_SOURCE_DIR}
+      PRIVATE 
           ${PIPEWIRE_INCLUDE_DIRS} 
           ${SPA_INCLUDE_DIRS}
   )
   
   target_link_libraries(audio_backend 
-      PUBLIC 
+      PRIVATE 
           ${PIPEWIRE_LIBRARIES} 
           ${SPA_LIBRARIES}
   )
-  target_compile_definitions(audio_backend PUBLIC USE_PIPEWIRE_AUDIO=1)
+  target_compile_definitions(audio_backend PRIVATE USE_PIPEWIRE_AUDIO=1)
   message(STATUS "Using PIPEWIRE audio backend")
 endif()
