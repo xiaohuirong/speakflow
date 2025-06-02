@@ -1,4 +1,4 @@
-#include "audio.h" // Assuming this is the base class header
+#include "audio.h"
 #include <condition_variable>
 #include <mutex>
 #include <pipewire/pipewire.h>
@@ -11,7 +11,7 @@ public:
   explicit PipeWireAudio(int len_ms = 2000);
   ~PipeWireAudio() override;
 
-  auto init(int sample_rate, const std::string &input = "") -> bool override;
+  auto init(int sample_rate, const std::string &input) -> bool override;
   auto resume() -> bool override;
   auto pause() -> bool override;
   auto clear() -> bool override;

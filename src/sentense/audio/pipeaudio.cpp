@@ -1,4 +1,5 @@
 #include "pipeaudio.h"
+#include <iostream>
 
 const struct pw_stream_events PipeWireAudio::stream_events_ = {
     .version = PW_VERSION_STREAM_EVENTS,
@@ -21,6 +22,7 @@ auto PipeWireAudio::init(int sample_rate, const std::string &input) -> bool {
   if (is_initialized_) {
     return true;
   }
+  std::cout << "input string: " << input << std::endl;
 
   sample_rate_ = sample_rate;
   if (!input.empty()) {

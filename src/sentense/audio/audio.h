@@ -14,7 +14,8 @@ public:
   explicit AsyncAudio(int len_ms = 2000) : max_buffer_len_ms_(len_ms) {}
   virtual ~AsyncAudio() = default;
 
-  virtual auto init(int sample_rate, const std::string &input = "") -> bool = 0;
+  virtual auto init(int sample_rate,
+                    const std::string &input = "default_output") -> bool = 0;
   virtual auto resume() -> bool = 0;
   virtual auto pause() -> bool = 0;
   virtual auto clear() -> bool = 0;
