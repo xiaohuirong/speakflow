@@ -47,7 +47,7 @@ Sentense::~Sentense() { stop(); }
 
 auto Sentense::initialize() -> bool {
 
-  if (!m_audio_capture->init(m_sample_rate)) {
+  if (!m_audio_capture->init(m_sample_rate, "default_output")) {
     std::cerr << "Failed to initialize audio capture" << std::endl;
     return false;
   }

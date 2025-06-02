@@ -24,7 +24,11 @@ auto PipeWireAudio::init(int sample_rate, const std::string &input) -> bool {
 
   sample_rate_ = sample_rate;
   if (!input.empty()) {
-    input_type_ = InputType::SpecificApplication;
+    if (input == "default_output") {
+      input_type_ = InputType::DefaultOutput;
+    } else {
+      input_type_ = InputType::SpecificApplication;
+    }
     target_ = input;
   }
 
