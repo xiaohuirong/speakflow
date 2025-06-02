@@ -13,7 +13,7 @@ const struct pw_stream_events PipeWireAudio::stream_events_ = {
     .drained = nullptr,
     .command = nullptr};
 
-PipeWireAudio::PipeWireAudio(int len_ms) : Audio(len_ms) {}
+PipeWireAudio::PipeWireAudio(int len_ms) : AsyncAudio(len_ms) {}
 
 PipeWireAudio::~PipeWireAudio() { cleanup(); }
 
@@ -215,8 +215,8 @@ void PipeWireAudio::on_stream_param_changed(void *userdata, uint32_t id,
   self->sample_rate_ = info.info.raw.rate;
 }
 
-auto Audio::create(const std::string &type, int len_ms)
-    -> std::unique_ptr<Audio> {
+auto AsyncAudio::create(const std::string &type, int len_ms)
+    -> std::unique_ptr<AsyncAudio> {
   if (type == "pipewire") {
     return std::make_unique<PipeWireAudio>(len_ms);
   }

@@ -27,7 +27,7 @@ private:
   const int m_sample_rate;
 
   // Components
-  std::unique_ptr<Audio> m_audio_capture;
+  std::unique_ptr<AsyncAudio> m_audio_capture;
   VadIterator m_vad;
   std::shared_ptr<EventBus> eventBus;
 

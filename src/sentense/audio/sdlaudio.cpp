@@ -245,8 +245,8 @@ auto sdl_poll_events() -> bool {
   return true;
 }
 
-auto Audio::create(const std::string &type, int len_ms)
-    -> std::unique_ptr<Audio> {
+auto AsyncAudio::create(const std::string &type, int len_ms)
+    -> std::unique_ptr<AsyncAudio> {
   if (type == "sdl") {
     return std::make_unique<SDLAudio>(len_ms);
   }

@@ -202,8 +202,8 @@ void QTAudio::get(int ms, std::vector<float> &result) {
   }
 }
 
-auto Audio::create(const std::string &type, int len_ms)
-    -> std::unique_ptr<Audio> {
+auto AsyncAudio::create(const std::string &type, int len_ms)
+    -> std::unique_ptr<AsyncAudio> {
   if (type == "qt") {
     return std::make_unique<QTAudio>(len_ms);
   }

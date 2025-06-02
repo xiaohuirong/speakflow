@@ -13,11 +13,11 @@ Sentense::Sentense(const std::string &model_path, std::shared_ptr<EventBus> bus,
       m_vad(model_path, sample_rate, 32, 0.5, MIN_SENTENCE_GAP_MS, 30, 250) {
 
 #ifdef USE_SDL_AUDIO
-  m_audio_capture = Audio::create("sdl", BUFFER_DURATION_MS);
+  m_audio_capture = AsyncAudio::create("sdl", BUFFER_DURATION_MS);
 #elif defined(USE_QT_AUDIO)
-  m_audio_capture = Audio::create("qt", BUFFER_DURATION_MS);
+  m_audio_capture = AsyncAudio::create("qt", BUFFER_DURATION_MS);
 #elif defined(USE_PIPEWIRE_AUDIO)
-  m_audio_capture = Audio::create("pipewire", BUFFER_DURATION_MS);
+  m_audio_capture = AsyncAudio::create("pipewire", BUFFER_DURATION_MS);
 #endif
 
   // 计算环形缓冲区大小

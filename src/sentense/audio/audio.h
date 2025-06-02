@@ -3,7 +3,7 @@
 #include <string>
 #include <vector>
 
-class Audio {
+class AsyncAudio {
 public:
   enum class InputType {
     DefaultMicrophone,
@@ -11,8 +11,8 @@ public:
     SpecificApplication
   };
 
-  explicit Audio(int len_ms = 2000) : max_buffer_len_ms_(len_ms) {}
-  virtual ~Audio() = default;
+  explicit AsyncAudio(int len_ms = 2000) : max_buffer_len_ms_(len_ms) {}
+  virtual ~AsyncAudio() = default;
 
   virtual auto init(int sample_rate, const std::string &input = "") -> bool = 0;
   virtual auto resume() -> bool = 0;
@@ -21,7 +21,7 @@ public:
   virtual void get(int ms, std::vector<float> &audio) = 0;
 
   static auto create(const std::string &type, int len_ms = 2000)
-      -> std::unique_ptr<Audio>;
+      -> std::unique_ptr<AsyncAudio>;
 
 protected:
   int sample_rate_ = 16000;

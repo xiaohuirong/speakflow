@@ -6,7 +6,7 @@
 #include <thread>
 #include <vector>
 
-class PipeWireAudio : public Audio {
+class PipeWireAudio : public AsyncAudio {
 public:
   explicit PipeWireAudio(int len_ms = 2000);
   ~PipeWireAudio() override;

@@ -15,7 +15,7 @@ using namespace std;
 // SDL Audio capture
 //
 
-class SDLAudio : public Audio {
+class SDLAudio : public AsyncAudio {
 public:
   explicit SDLAudio(int len_ms = 2000);
   ~SDLAudio() override;

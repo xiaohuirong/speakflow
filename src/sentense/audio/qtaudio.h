@@ -7,7 +7,7 @@
 #include <QThread>
 #include <vector>
 
-class QTAudio : public QObject, public Audio {
+class QTAudio : public QObject, public AsyncAudio {
   Q_OBJECT
 public:
   explicit QTAudio(int len_ms, QObject *parent = nullptr);
