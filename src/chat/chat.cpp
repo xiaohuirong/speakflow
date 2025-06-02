@@ -77,7 +77,7 @@ void Chat::addMessage(const string &messageText) {
 
 void Chat::processMessages() {
   while (true) {
-    Message message = {.text = ""};
+    string message = "";
 
     {
       unique_lock<mutex> lock(queueMutex);
@@ -87,21 +87,21 @@ void Chat::processMessages() {
         return;
       }
 
-      if (messageQueue.empty()) {
-        continue;
+      while (!messageQueue.empty()) {
+        message += messageQueue.front();
+        messageQueue.pop();
       }
 
-      message = messageQueue.front();
-      messageQueue.pop();
+      eventBus->publish<MessageClearedEvent>();
     }
 
-    spdlog::info("Processing message: {0}", message.text);
+    spdlog::info("Processing message: {0}", message);
     message_count += 1;
 
     eventBus->publish<MessageAddedEvent>(
-        "chat", format("## USER {} \n", message_count) + message.text);
+        "chat", format("## USER {} \n", message_count) + message);
 
-    string response = wait_response(message.text);
+    string response = wait_response(message);
     // callback
 
     eventBus->publish<MessageAddedEvent>(

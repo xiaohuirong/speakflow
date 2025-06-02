@@ -45,6 +45,11 @@ public:
       : serviceName(std::move(name)), message(std::move(msg)) {}
 };
 
+class MessageClearedEvent : public Event {
+public:
+  MessageClearedEvent() = default;
+};
+
 class AutoModeSetEvent : public Event {
 public:
   std::string serviceName;
@@ -82,4 +87,14 @@ public:
   bool isRunning;
   ServiceStatusEvent(std::string name, bool running)
       : serviceName(std::move(name)), isRunning(running) {}
+};
+
+class ChatSettingsRequireEvent : public Event {
+public:
+  ChatSettingsRequireEvent() = default;
+};
+
+class ChatSettingsReturnEvent : public Event {
+public:
+  ChatSettingsReturnEvent() = default;
 };
