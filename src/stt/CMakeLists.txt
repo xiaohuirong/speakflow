@@ -15,7 +15,7 @@ if(NOT whisper_FOUND)
   set(GGML_CUDA
       1
       CACHE BOOL "Enable CUDA for GGML")
-  add_subdirectory(../../dep/whisper)
+  add_subdirectory(../../dep/whisper whisper)
   set(WHISPER_LIB whisper)
   set(WHISPER_INCLUDE_DIR dep/whisper/include)
 else()

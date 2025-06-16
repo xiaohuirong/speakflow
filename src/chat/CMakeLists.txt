@@ -8,7 +8,7 @@ endif()
 
 if(NOT liboai_FOUND)
   message(STATUS "liboai not found, using submodule in dep/liboai")
-  add_subdirectory(../../dep/liboai ../../dep/liboai)
+  add_subdirectory(../../dep/liboai liboai)
   set(LIBOAI_LIB oai)
   set(LIBOAI_INCLUDE_DIR dep/liboai/liboai/include)
 else()
