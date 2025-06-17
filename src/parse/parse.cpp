@@ -110,6 +110,18 @@ auto whisper_params_parse(int argc, char **argv, whisper_params &params)
 
   CLI11_PARSE(app, argc, argv);
 
+  // Check if model files exist
+  if (!params.model.empty() && !std::filesystem::exists(params.model)) {
+    std::cerr << "Error: Model file not found at " << params.model << std::endl;
+    exit(1);
+  }
+
+  if (!params.vad_model.empty() && !std::filesystem::exists(params.vad_model)) {
+    std::cerr << "Error: VAD model file not found at " << params.vad_model
+              << std::endl;
+    exit(1);
+  }
+
   params.use_vad = params.step_ms <= 0;
   params.keep_ms = min(params.keep_ms, params.step_ms);
   params.length_ms = max(params.length_ms, params.step_ms);
