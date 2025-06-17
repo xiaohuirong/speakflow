@@ -1,8 +1,6 @@
 #include "parse.h"
 #include <CLI/CLI.hpp>
-#include <cstdio>
 #include <iostream>
-#include <whisper.h>
 
 void print_whisper_params(const whisper_params &p) {
   cout << left << setw(20) << "name" << setw(10) << "value" << endl;

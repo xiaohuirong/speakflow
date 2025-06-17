@@ -7,6 +7,8 @@
 
 using namespace std;
 
+#define WHISPER_SAMPLE_RATE 16000
+
 // command-line parameters
 struct whisper_params {
   int32_t n_threads = min(4, (int32_t)thread::hardware_concurrency());
